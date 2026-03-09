@@ -98,7 +98,7 @@ Guest Name ⌂ Property Name
 Thu, Mar 26, 2026 → Tue, Mar 31, 2026
 PLATFORM_ID (Accepted)
 https://my.hospitable.com/inbox/thread/<conversation-uuid>
-submess-<conversation-uuid>
+subsmess-<conversation-uuid>
 ---
 <SOP Message>
 @here

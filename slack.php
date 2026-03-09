@@ -124,7 +124,7 @@ function buildReminderMessage($reminder, $sopMessage) {
     $msg .= $checkIn . " → " . $checkOut . "\n";
     $msg .= $platformId . " (Accepted)\n";
     $msg .= $shortLink . "\n";
-    $msg .= "submess-" . $conversationId . "\n";
+    $msg .= "subsmess-" . $conversationId . "\n";
     $msg .= "---\n";
     $msg .= $sopMessage . "\n";
     $msg .= "<!here>";
