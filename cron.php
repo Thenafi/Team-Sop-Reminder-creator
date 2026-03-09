@@ -237,9 +237,82 @@ if (empty($sops) || empty($activePropertyUuids)) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PHASE 2: Send due reminders
+// PHASE 2: Check for modified check-in times (edge case)
 // ═══════════════════════════════════════════════════════════════
-logMessage("Phase 2: Checking for due reminders...");
+if (env('API_MODE', 'live') === 'live') {
+    logMessage("Phase 2: Checking for modified check-in times...");
+
+    // Get all scheduled (not yet sent) reminders
+    $stmt = $db->prepare("SELECT * FROM reminders WHERE status = 'scheduled'");
+    $stmt->execute();
+    $scheduledReminders = $stmt->fetchAll();
+
+    if (!empty($scheduledReminders)) {
+        // Build a map of Phase 1 results for quick lookup
+        $resMap = [];
+        foreach ($allReservations as $res) {
+            $resMap[$res['id']] = $res;
+        }
+
+        foreach ($scheduledReminders as $reminder) {
+            $resId = $reminder['reservation_id'];
+            $apiRes = null;
+
+            // 1. Check if it was already fetched in Phase 1
+            if (isset($resMap[$resId])) {
+                $apiRes = $resMap[$resId];
+            } else {
+                // 2. If it's due soon (or past due), but wasn't in Phase 1 (out of window), fetch it specifically
+                $isDueSoon = strtotime($reminder['scheduled_at']) <= (time() + 600); // due now or in next 10 mins
+                if ($isDueSoon) {
+                    logMessage("Reservation $resId was NOT in scan window but is due. Fetching specifically...");
+                    $apiRes = fetchReservation($resId);
+                }
+            }
+
+            if ($apiRes) {
+                // Verify status first
+                $status = $apiRes['status'] ?? $apiRes['reservation_status']['current']['category'] ?? 'unknown';
+                if ($status !== 'accepted') {
+                    logMessage("Reservation $resId is no longer accepted (status: $status). Marking failed.");
+                    $stmt = $db->prepare("UPDATE reminders SET status = 'failed', error_message = ? WHERE id = ?");
+                    $stmt->execute(["Reservation no longer accepted (status: $status)", $reminder['id']]);
+                    continue;
+                }
+
+                $apiCheckIn = date('Y-m-d H:i:s', strtotime($apiRes['check_in'] ?? $apiRes['arrival_date']));
+                $dbCheckIn = $reminder['check_in'];
+
+                if ($apiCheckIn !== $dbCheckIn) {
+                    logMessage("Check-in changed for reservation $resId: DB=$dbCheckIn → API=$apiCheckIn. Recalculating...");
+
+                    $sopId = $reminder['sop_id'];
+                    $reminderHours = env('REMINDER_HOURS_BEFORE', 12);
+                    foreach ($sops as $sop) {
+                        if ($sop['id'] === $sopId) {
+                            $reminderHours = (int) ($sop['reminder_hours_before'] ?? env('REMINDER_HOURS_BEFORE', 12));
+                            break;
+                        }
+                    }
+
+                    $schedule = calculateRandomSendTime($apiCheckIn, $reminderHours);
+                    $newScheduledAt = date('Y-m-d H:i:s', $schedule['timestamp']);
+
+                    $stmt = $db->prepare("UPDATE reminders SET check_in = ?, scheduled_at = ? WHERE id = ?");
+                    $stmt->execute([$apiCheckIn, $newScheduledAt, $reminder['id']]);
+                    logMessage("→ Rescheduled to $newScheduledAt");
+                }
+            }
+        }
+    } else {
+        logMessage("Skipping check-in time verification: No scheduled reminders.");
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PHASE 3: Send due reminders
+// ═══════════════════════════════════════════════════════════════
+logMessage("Phase 3: Checking for due reminders...");
 
 $now = date('Y-m-d H:i:s');
 $stmt = $db->prepare("SELECT * FROM reminders WHERE status = 'scheduled' AND scheduled_at <= ?");
@@ -250,30 +323,16 @@ logMessage("Found " . count($dueReminders) . " due reminders.");
 
 foreach ($dueReminders as $reminder) {
     $reservationId = $reminder['reservation_id'];
-    $propertyId = $reminder['property_id'];
+    $sopId = $reminder['sop_id'];
 
-    // ── Edge case: Re-verify reservation is still accepted ──
-    // (skip re-check in mock mode to avoid unnecessary API calls)
-    if (env('API_MODE', 'live') === 'live' && $propertyId) {
-        $currentStatus = checkReservationStatus($reservationId, $propertyId);
-        
-        if ($currentStatus === null) {
-            logMessage("API Error: Could not fetch status for reservation $reservationId. Skipping to prevent sending in error.");
-            $stmt = $db->prepare("UPDATE reminders SET status = 'failed', error_message = ? WHERE id = ?");
-            $stmt->execute(["Could not verify reservation status with API", $reminder['id']]);
-            continue;
-        }
-
-        if ($currentStatus !== 'accepted') {
-            logMessage("Reservation $reservationId is no longer accepted (status: $currentStatus). Skipping.");
-            $stmt = $db->prepare("UPDATE reminders SET status = 'failed', error_message = ? WHERE id = ?");
-            $stmt->execute(["Reservation no longer accepted (status: $currentStatus)", $reminder['id']]);
-            continue;
+    // ── Use fresh template if available in config ──
+    $sopMessage = $reminder['sop_message']; // fallback
+    foreach ($sops as $sop) {
+        if (($sop['id'] ?? '') === $sopId) {
+            $sopMessage = $sop['sop_message'] ?: $sopMessage;
+            break;
         }
     }
-
-    // ── Build and send the Slack message ──
-    $sopMessage = $reminder['sop_message']; // Fetched directly from the new column!
 
     $messageText = buildReminderMessage($reminder, $sopMessage);
     logMessage("Sending reminder for reservation $reservationId...");
@@ -298,62 +357,6 @@ foreach ($dueReminders as $reminder) {
 
     // Rate limit: 1 second between messages
     sleep(1);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// PHASE 3: Check for modified check-in times (edge case)
-// ═══════════════════════════════════════════════════════════════
-if (env('API_MODE', 'live') === 'live' && !empty($activePropertyUuids)) {
-    logMessage("Phase 3: Checking for modified check-in times...");
-
-    // Get all scheduled (not yet sent) reminders
-    $stmt = $db->prepare("SELECT * FROM reminders WHERE status = 'scheduled'");
-    $stmt->execute();
-    $scheduledReminders = $stmt->fetchAll();
-
-    if (!empty($scheduledReminders) && !empty($allReservations)) {
-        // We already fetched $allReservations in Phase 1 for all active properties
-        // within their respective scan windows. Let's build a map for quick lookup.
-        $resMap = [];
-        foreach ($allReservations as $res) {
-            $resMap[$res['id']] = $res;
-        }
-
-        foreach ($scheduledReminders as $reminder) {
-            // Only check reservations that were returned in Phase 1's scan window
-            if (isset($resMap[$reminder['reservation_id']])) {
-                $apiRes = $resMap[$reminder['reservation_id']];
-                $apiCheckIn = date('Y-m-d H:i:s', strtotime($apiRes['check_in'] ?? $apiRes['arrival_date']));
-                $dbCheckIn = $reminder['check_in'];
-
-                if ($apiCheckIn !== $dbCheckIn) {
-                    logMessage("Check-in changed for reservation " . $reminder['reservation_id'] .
-                        ": DB=$dbCheckIn → API=$apiCheckIn. Recalculating...");
-
-                    $propertyId = $reminder['property_id'];
-                    $sopId = $reminder['sop_id'];
-                    
-                    // Find the SOP to get reminder_hours_before
-                    $reminderHours = env('REMINDER_HOURS_BEFORE', 12); // fallback
-                    foreach ($sops as $sop) {
-                        if ($sop['id'] === $sopId) {
-                            $reminderHours = (int) ($sop['reminder_hours_before'] ?? env('REMINDER_HOURS_BEFORE', 12));
-                            break;
-                        }
-                    }
-
-                    $schedule = calculateRandomSendTime($apiCheckIn, $reminderHours);
-                    $newScheduledAt = date('Y-m-d H:i:s', $schedule['timestamp']);
-
-                    $stmt = $db->prepare("UPDATE reminders SET check_in = ?, scheduled_at = ? WHERE id = ?");
-                    $stmt->execute([$apiCheckIn, $newScheduledAt, $reminder['id']]);
-                    logMessage("→ Rescheduled to $newScheduledAt");
-                }
-            }
-        }
-    } else {
-        logMessage("Skipping check-in time verification: No scheduled reminders or no reservations fetched in Phase 1.");
-    }
 }
 
 logMessage("=== CRON END ===\n");

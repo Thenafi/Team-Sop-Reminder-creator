@@ -73,12 +73,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generate ID if missing
             $sopId = !empty($sopData['id']) ? $sopData['id'] : 'sop_' . uniqid();
             
+            $remHours = (int) ($sopData['reminder_hours_before'] ?: env('REMINDER_HOURS_BEFORE', 12));
+            $scanDays = (int) ($sopData['scan_days_ahead'] ?: 2);
+            
+            // Backend correction: Ensure scan_days_ahead is large enough to cover the reminder window
+            $minDaysNeeded = (int) ceil($remHours / 24);
+            if ($scanDays < $minDaysNeeded) {
+                $scanDays = $minDaysNeeded;
+            }
+
             $config['sops'][] = [
                 'id' => $sopId,
                 'name' => trim($sopData['name'] ?? 'Unnamed SOP'),
                 'sop_message' => trim($sopData['sop_message'] ?? ''),
-                'reminder_hours_before' => (int) ($sopData['reminder_hours_before'] ?: env('REMINDER_HOURS_BEFORE', 12)),
-                'scan_days_ahead' => (int) ($sopData['scan_days_ahead'] ?: 2),
+                'reminder_hours_before' => $remHours,
+                'scan_days_ahead' => $scanDays,
                 'properties' => $sopData['properties'] ?? [], // Array of enabled property UUIDs for this SOP
                 'platforms' => $sopData['platforms'] ?? [], // Array of enabled platforms for this SOP
                 'platform_filter_mode' => $sopData['platform_filter_mode'] ?? 'include', // include or exclude
@@ -696,7 +705,27 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
             });
 
             // "Saving..." Animation
-            $('form').on('submit', function() {
+            $('form').on('submit', function(e) {
+                // Validation: Scan Days Ahead vs Reminder Hours
+                let hasError = false;
+                $('.property-card').each(function() {
+                    const block = $(this);
+                    const name = block.find('input[name*="[name]"]').val();
+                    const hours = parseInt(block.find('input[name*="[reminder_hours_before]"]').val()) || 0;
+                    const days = parseInt(block.find('input[name*="[scan_days_ahead]"]').val()) || 0;
+                    
+                    if (days * 24 < hours) {
+                        alert(`Error in SOP "${name}":\nScan Days Ahead (${days} days = ${days*24} hours) must be greater than or equal to Reminder Hours Before (${hours} hours).\n\nPlease increase Scan Days Ahead.`);
+                        hasError = true;
+                        return false; // break loop
+                    }
+                });
+
+                if (hasError) {
+                    e.preventDefault();
+                    return false;
+                }
+
                 const btn = $(this).find('#save-all-btn');
                 if(btn.length) {
                     btn.prop('disabled', true).text('⏳ Saving...');

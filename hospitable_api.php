@@ -228,3 +228,19 @@ function checkReservationStatus($reservationId, $propertyUuid) {
     // Fallback to the nested 'reservation_status' object
     return $result['data']['reservation_status']['current']['category'] ?? null;
 }
+
+/**
+ * Fetch full details for a single reservation.
+ * 
+ * @param string $reservationId
+ * @return array|null Reservation data or null
+ */
+function fetchReservation($reservationId) {
+    if (empty($reservationId)) return null;
+    
+    $result = hospitable_request('/reservations/' . urlencode($reservationId), [
+        'include' => 'guest,properties'
+    ]);
+    
+    return $result['data'] ?? null;
+}
