@@ -1,0 +1,202 @@
+openapi: 3.0.3
+info:
+  title: Hospitable Public API
+  version: "2.0"
+  description: |
+    Retrieve a paginated list of properties that belong to the authenticated account.
+servers:
+  - url: https://public.api.hospitable.com/v2
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IncludeParam:
+      name: include
+      in: query
+      description: >
+        Comma‑separated list of related resources to embed in each property record.
+        Allowed values: **user, listings, details, bookings**
+      schema:
+        type: string
+        pattern: '^(user|listings|details|bookings)(,(user|listings|details|bookings))*$'
+      example: listings,bookings
+    PageParam:
+      name: page
+      in: query
+      description: Page index (1‑based).
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 2
+    PerPageParam:
+      name: per_page
+      in: query
+      description: Number of records per page (max 100).
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+      example: 25
+  schemas:
+    ##— Core objects ----------------------------------------------------------
+    PropertyListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: $ref: '#/components/schemas/PropertyFull'
+        links:  $ref: '#/components/schemas/PaginationLinks'
+        meta:   $ref: '#/components/schemas/PaginationMeta'
+    PropertyFull:
+      type: object
+      required:
+        [id, name, public_name, picture, address, timezone, listed, currency,
+         summary, description, checkin, checkout, amenities, capacity,
+         room_details, house_rules, tags, property_type, room_type,
+         calendar_restricted]
+      properties:
+        id:            { type: string, format: uuid, example: 550e8400-e29b-41d4-a716-446655440000 }
+        name:          { type: string, example: Relaxing Villa near the sea }
+        public_name:   { type: string, example: Relaxing Villa near the sea }
+        picture:       { type: string, format: uri }
+        address:       $ref: '#/components/schemas/Address'
+        timezone:      { type: string, example: "+0200" }
+        listed:        { type: boolean, example: true }
+        currency:      { type: string, example: EUR }
+        summary:       { type: string }
+        description:   { type: string }
+        checkin:       { type: string, example: "15:00", description: Default check‑in time (HH:mm) }
+        checkout:      { type: string, example: "11:00", description: Default check‑out time (HH:mm) }
+        amenities:     { type: array, items: { type: string } }
+        capacity:      $ref: '#/components/schemas/Capacity'
+        room_details:  { type: array, items: $ref: '#/components/schemas/RoomDetails' }
+        house_rules:   $ref: '#/components/schemas/HouseRules'
+        tags:          { type: array, items: { type: string } }
+        property_type: { type: string, example: house }
+        room_type:     { type: string, example: Entire Home }
+        calendar_restricted: { type: boolean }
+        ##— Optional, returned only when requested via `include=…`
+        parent_child:  { $ref: '#/components/schemas/ParentChild', nullable: true }
+        bookings:      { $ref: '#/components/schemas/Bookings',     nullable: true }
+        listings:      { type: array, items: $ref: '#/components/schemas/Listing' }
+        details:       { $ref: '#/components/schemas/PropertyDetails', nullable: true }
+        user:          { $ref: '#/components/schemas/User', nullable: true }
+
+    Address:
+      type: object
+      required: [street, city, postcode, country, display]
+      properties:
+        number:       { type: string, nullable: true }
+        street:       { type: string }
+        city:         { type: string }
+        state:        { type: string, nullable: true }
+        postcode:     { type: string }
+        country:      { type: string, description: ISO‑3166‑1 alpha‑2 }
+        country_name: { type: string }
+        coordinates:  $ref: '#/components/schemas/Coordinates'
+        display:      { type: string }
+
+    Coordinates:
+      type: object
+      properties:
+        latitude:  { type: string }
+        longitude: { type: string }
+
+    Capacity:
+      type: object
+      properties:
+        max:        { type: integer, example: 10 }
+        bedrooms:   { type: integer }
+        beds:       { type: integer }
+        bathrooms:  { type: number, format: float }
+
+    RoomDetails:
+      type: object
+      properties:
+        beds:
+          type: array
+          items: $ref: '#/components/schemas/Bed'
+
+    Bed:
+      type: object
+      properties:
+        type:     { type: string, example: queen_bed }
+        quantity: { type: integer, example: 1 }
+
+    HouseRules:
+      type: object
+      properties:
+        pets_allowed:    { type: boolean }
+        smoking_allowed: { type: boolean }
+        events_allowed:  { type: boolean, nullable: true }
+
+    ParentChild:
+      type: object
+      properties:
+        type:     { type: string, enum: [parent, child] }
+        parent:   { type: string, format: uuid }
+        children: { type: array, items: { type: string, format: uuid } }
+        siblings: { type: array, items: { type: string, format: uuid } }
+
+    ##— Simplified auxiliary schemas (expand as needed) -----------------------
+    Bookings:       { type: object, description: Booking‑level pricing & policy data }
+    Listing:        { type: object, description: Platform listing data           }
+    PropertyDetails:{ type: object, description: Additional internal attributes  }
+    User:           { type: object, description: Property owner / manager record }
+
+    PaginationLinks:
+      type: object
+      properties:
+        first: { type: string, format: uri }
+        last:  { type: string, format: uri }
+        prev:  { type: string, format: uri, nullable: true }
+        next:  { type: string, format: uri, nullable: true }
+
+    PaginationMeta:
+      type: object
+      properties:
+        current_page: { type: integer }
+        from:         { type: integer }
+        last_page:    { type: integer }
+        per_page:     { type: integer }
+        to:           { type: integer }
+        total:        { type: integer }
+
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+paths:
+  /properties:
+    get:
+      summary: List properties
+      description: |
+        Returns a paginated collection of properties belonging to the
+        authenticated account.  
+        Use the **include** query parameter to embed related resources.
+      tags: [Properties]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IncludeParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:   $ref: '#/components/schemas/PropertyListResponse'
+              examples:
+                default:
+                  value:  #‑‑ truncated for brevity – use the sample in the docs
+                    $ref: https://gist.github.com/...  # or inline your sample
+        '400': { description: Bad request, content: { application/json: { schema: $ref: '#/components/schemas/Error' } } }
+        '404': { description: Not found,     content: { application/json: { schema: $ref: '#/components/schemas/Error' } } }
+        '500': { description: Server error,  content: { application/json: { schema: $ref: '#/components/schemas/Error' } } }

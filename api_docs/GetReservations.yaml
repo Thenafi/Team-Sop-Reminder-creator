@@ -1,0 +1,215 @@
+openapi: 3.0.3
+info:
+  title: Hospitable Public API
+  version: "2.0"
+  description: Retrieve reservations for one or more properties.
+servers:
+  - url: https://public.api.hospitable.com/v2
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PropertiesParam:
+      name: properties[]
+      in: query
+      description: >
+        **Required.** One or more property UUIDs to filter by.
+        Example: `?properties[]=uuid1&properties[]=uuid2`
+      required: true
+      schema:
+        type: array
+        items:
+          type: string
+          format: uuid
+        minItems: 1
+        uniqueItems: true
+      style: form
+      explode: false
+    ConversationIdParam:
+      name: conversation_id
+      in: query
+      description: Exact match for a conversation UUID.
+      schema:
+        type: string
+        format: uuid
+    PlatformIdParam:
+      name: platform_id
+      in: query
+      description: Exact match for the reservation code on the OTA.
+      schema:
+        type: string
+    DateQueryParam:
+      name: date_query
+      in: query
+      description: Which field to compare when using `start_date` / `end_date`.
+      schema:
+        type: string
+        enum: [checkin, checkout]
+        default: checkin
+    StartDateParam:
+      name: start_date
+      in: query
+      description: Include reservations **on/after** this date (YYYY‑MM‑DD).
+      schema:
+        type: string
+        format: date
+    EndDateParam:
+      name: end_date
+      in: query
+      description: Include reservations **on/before** this date (YYYY‑MM‑DD).
+      schema:
+        type: string
+        format: date
+    LastMessageAtParam:
+      name: last_message_at
+      in: query
+      description: Return reservations whose latest message is **after** this timestamp (UTC, `YYYY‑MM‑DD HH:mm:ss`).
+      schema:
+        type: string
+        format: date-time
+    IncludeParam:
+      name: include
+      in: query
+      description: >
+        Comma‑separated related resources to embed.  
+        Allowed: **guest, user, financials, financialsV2, listings, properties, review**
+      schema:
+        type: string
+        pattern: '^(guest|user|financialsV2?|listings|properties|review)(,(guest|user|financialsV2?|listings|properties|review))*$'
+      example: guest,financials
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PerPageParam:
+      name: per_page
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+
+  schemas:
+    ##— Core envelope ---------------------------------------------------------
+    ReservationListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: $ref: '#/components/schemas/Reservation'
+        links:  $ref: '#/components/schemas/PaginationLinks'
+        meta:   $ref: '#/components/schemas/PaginationMeta'
+
+    Reservation:
+      type: object
+      required:
+        [id, code, platform, platform_id, booking_date, arrival_date,
+         departure_date, check_in, check_out, nights, reservation_status,
+         conversation_id, last_message_at, guests]
+      properties:
+        id:               { type: string, format: uuid }
+        code:             { type: string, description: Alias of platform_id }
+        platform:         { type: string, enum: [airbnb, homeaway, booking, direct, manual] }
+        platform_id:      { type: string, description: Reservation code }
+        booking_date:     { type: string, format: date-time }
+        arrival_date:     { type: string, format: date-time }
+        departure_date:   { type: string, format: date-time }
+        check_in:         { type: string, format: date-time }
+        check_out:        { type: string, format: date-time }
+        nights:           { type: integer }
+        reservation_status:
+          type: object
+          properties:
+            current:
+              type: object
+              properties:
+                category:     { type: string }
+                sub_category: { type: string, nullable: true }
+            history:
+              type: array
+              items:
+                type: object
+                properties:
+                  category:     { type: string }
+                  sub_category: { type: string, nullable: true }
+                  changed_at:   { type: string, format: date-time }
+        conversation_id:  { type: string, format: uuid }
+        last_message_at:  { type: string, format: date-time }
+        guests:
+          type: object
+          properties:
+            total:        { type: integer }
+            adult_count:  { type: integer }
+            child_count:  { type: integer }
+            infant_count: { type: integer }
+            pet_count:    { type: integer }
+        ##— Optional blocks (via ?include=…) ----------------------------------
+        financials:    { $ref: '#/components/schemas/Financials',  nullable: true }
+        properties:    { type: array, items: $ref: '#/components/schemas/Property', nullable: true }
+        listings:      { type: array, items: $ref: '#/components/schemas/Listing',  nullable: true }
+        guest:         { $ref: '#/components/schemas/Guest',       nullable: true }
+        user:          { $ref: '#/components/schemas/User',        nullable: true }
+        review:        { $ref: '#/components/schemas/Review',      nullable: true }
+
+    ##— Stubs for nested resources -------------------------------------------
+    Financials: { type: object, description: "Host/guest pricing breakdown" }
+    Property:   { type: object, description: "Minimal property representation" }
+    Listing:    { type: object, description: "Minimal listing representation" }
+    Guest:      { type: object, description: "Guest contact & profile" }
+    User:       { type: object, description: "Account owner / co‑host" }
+    Review:     { type: object, description: "Review left by host or guest" }
+
+    PaginationLinks:
+      type: object
+      properties:
+        first: { type: string, format: uri }
+        last:  { type: string, format: uri }
+        prev:  { type: string, format: uri, nullable: true }
+        next:  { type: string, format: uri, nullable: true }
+
+    PaginationMeta:
+      type: object
+      properties:
+        current_page: { type: integer }
+        from:         { type: integer }
+        last_page:    { type: integer }
+        per_page:     { type: integer }
+        to:           { type: integer }
+        total:        { type: integer }
+
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+
+paths:
+  /reservations:
+    get:
+      summary: List reservations
+      description: |
+        Returns reservations for the specified properties.  
+        By default only stays **checking‑in within the next 14 days** are
+        returned; supply `start_date`/`end_date` to widen the range.
+      tags: [Reservations]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertiesParam'
+        - $ref: '#/components/parameters/ConversationIdParam'
+        - $ref: '#/components/parameters/PlatformIdParam'
+        - $ref: '#/components/parameters/DateQueryParam'
+        - $ref: '#/components/parameters/StartDateParam'
+        - $ref: '#/components/parameters/EndDateParam'
+        - $ref: '#/components/parameters/LastMessageAtParam'
+        - $ref: '#/components/parameters/IncludeParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema: $ref: '#/components/schemas/ReservationListResponse'
+        '400': { description: Bad request, content: { application/json: { schema: $ref: '#/components/schemas/Error' } } }
+        '500': { description: Server error,  content: { application/json: { schema: $ref: '#/components/schemas/Error' } } }

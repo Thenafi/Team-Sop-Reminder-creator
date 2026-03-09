@@ -1,0 +1,1408 @@
+{
+    "data": [
+        {
+            "id": "4c40dfc8-fba7-4c5e-b201-9a31f37c4152",
+            "name": "A011_Drew | Marion",
+            "public_name": "Spacious 4BR Family Haven | Backyard-Patio-Pets OK",
+            "picture": "https://a0.muscache.com/im/pictures/miso/Hosting-715021498637718547/original/f22d6b9c-8dad-4950-92b5-478466e1a6d3.jpeg?aki_policy=small",
+            "address": {
+                "number": null,
+                "street": "2721 Marion Avenue",
+                "city": "Evansville",
+                "state": "IN",
+                "postcode": "47712",
+                "country": "US",
+                "country_name": "United States",
+                "coordinates": {
+                    "latitude": "37.97455100",
+                    "longitude": "-87.60735580"
+                },
+                "display": "2721 Marion Avenue, Evansville, IN, 47712, US"
+            },
+            "timezone": "-0500",
+            "listed": true,
+            "currency": "USD",
+            "summary": "Welcome to this spacious 4-bedroom home, offering 2,200 SF of modern comfort and charm perfect for families or groups of up to 6 guests. This inviting retreat features all the amenities you need for a relaxing stay, including a cozy atmosphere, a patio, and a backyard to unwind.  Conveniently located just 10 minutes from Evansville Airport and 8 minutes from Deaconess Midtown, you’ll be close to top attractions like Mesker Park Zoo, Tropicana Casino, and the Evansville Museum.",
+            "description": "You’ll be less than one mile from a famous Franklin St known for access to easy bar hopping and nightlife. It’s easy to Uber to there or downtown. The home has ample space for clothing storage on a longer stay, and all the important kitchen items; baking sheet, toaster, coffee, wine glasses, freezer, Kuerig coffee machine, and a blender\n\nThe 4th bedroom is an office space and does not have a bed.\n\nA maximum of 2 dogs is allowed, with a $150 pet fee per dog.\n*Larger dogs must be approved by the host, and a deposit along with an additional pet fee will be required.\n\nThe entrance (main door on the porch) has a keypad. The Smart lock will you a dedicated code for your stay..\n\nNone, this is a self check in.\n\nDowntown Evansville, University of Evansville, University of Southern Indiana, Bally Casino, Ford Center, Berry Plastics, River View, Reitz High School\n\nYou’ll want to travel with a vehicle or bicycle.\n\nIt's a shared driveway, please park in the street.\n\nOne bedroom is being used as a home office. This home offers 1 king size bed and 2 queen size beds.\n\nThe backyard offers ample space for pets to play and use the restroom comfortably.\n\nThe home comes equipped with a starter pack of toilet paper, paper towels, dish soap, body wash, shampoo, conditioner, and laundry pods. For longer stays or higher needs, you will need to purchase additional toiletries to accommodate your needs. There is a local Dollar General store within walking distance for all additional needs.",
+            "checkin": "16:00",
+            "checkout": "11:00",
+            "amenities": [
+                "ac",
+                "baking_sheet",
+                "bed_linens",
+                "blender",
+                "board_games",
+                "cable",
+                "carbon_monoxide_detector",
+                "cleaning_before_checkout",
+                "cleaning_products",
+                "coffee",
+                "coffee_maker",
+                "conditioner",
+                "cooking_basics",
+                "dining_table",
+                "dishes_and_silverware",
+                "dryer",
+                "essentials",
+                "ethernet_connection",
+                "extra_pillows_and_blankets",
+                "fire_extinguisher",
+                "first_aid_kit",
+                "freezer",
+                "free_parking",
+                "garden_or_backyard",
+                "hair_dryer",
+                "hangers",
+                "heating",
+                "high_chair",
+                "hot_water",
+                "kitchen",
+                "laptop_friendly_workspace",
+                "laundromat_nearby",
+                "life_size_games",
+                "lock_on_bedroom_door",
+                "long_term_stays_allowed",
+                "microwave",
+                "outdoor_seating",
+                "oven",
+                "pack_n_play_travel_crib",
+                "patio_or_belcony",
+                "private_entrance",
+                "private_living_room",
+                "refrigerator",
+                "room_darkening_shades",
+                "shampoo",
+                "shower_gel",
+                "smoke_detector",
+                "stove",
+                "street_parking",
+                "toaster",
+                "tv",
+                "wardrobe_or_closet",
+                "washer",
+                "wine_glasses",
+                "wireless_internet"
+            ],
+            "capacity": {
+                "max": 6,
+                "bedrooms": 4,
+                "beds": 3,
+                "bathrooms": 2
+            },
+            "room_details": [
+                {
+                    "type": "bedroom",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": []
+                },
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "kitchen",
+                    "beds": []
+                },
+                {
+                    "type": "living_room",
+                    "beds": []
+                },
+                {
+                    "type": "exterior",
+                    "beds": []
+                },
+                {
+                    "type": "patio",
+                    "beds": []
+                },
+                {
+                    "type": "dining_room",
+                    "beds": []
+                }
+            ],
+            "property_type": "house",
+            "room_type": "Entire Home",
+            "tags": [
+                "A011-Drew"
+            ],
+            "house_rules": {
+                "pets_allowed": true,
+                "smoking_allowed": false,
+                "events_allowed": false
+            },
+            "calendar_restricted": false,
+            "parent_child": null
+        },
+        {
+            "id": "7d87607f-1ba1-40de-887f-6b96f4cc3ce6",
+            "name": "A011_Drew | Ravenswood [Unlisted]",
+            "public_name": "Cozy nature retreat 3BR  family friendly-7 Sleeps",
+            "picture": "https://media.vrbo.com/lodging/65000000/65000000/64992300/64992270/w1022h683x1y0-9e473dbf.c9.jpg",
+            "address": {
+                "number": null,
+                "street": "1426 Ravenswood Drive",
+                "city": "Evansville",
+                "state": "IN",
+                "postcode": "47714",
+                "country": "US",
+                "country_name": "United States",
+                "coordinates": {
+                    "latitude": "37.95664978",
+                    "longitude": "-87.53736115"
+                },
+                "display": "1426 Ravenswood Drive, Evansville, IN, 47714, US"
+            },
+            "timezone": "-0500",
+            "listed": false,
+            "currency": "USD",
+            "summary": "Escape to this inviting 3-bedroom home, perfect for families or groups looking for both comfort and adventure. Nestled in a tranquil neighborhood, this charming retreat is just minutes away from Evansville’s top attractions, including the University of Evansville,Tropicana Casino,Mesker Park Zoo and the Ford Center. With space to accommodate up to 7 guests, pet-friendly amenities,free parking,an EV charger, and a cozy patio, it’s the ultimate haven. Relax, recharge and explore from perfect home.",
+            "description": "A maximum of 2 dogs is allowed, with a $150 pet fee per dog.\n*Larger dogs must be approved by the host, and a deposit along with an additional pet fee will be required.\n\nThe entrance (main door on the porch with the security camera) has a keypad. Guest has access to the entire home.\n\nNone, this is a self check in.\n\nDowntown Evansville, University of Evansville, University of Southern Indiana, Bally's Casino, Ford Center, Berry Plastics\n\nYou’ll want to travel with a vehicle or bicycle.\n\n***Exciting news for our upcoming prospective guest! Ravenswood has undergone an incredible transformation with recent renovations. While the current listing photos might not reflect this yet, we assure you that the changes are remarkable. Updated pictures are on their way to showcase the new and improved space. Get ready to be impressed!***",
+            "checkin": "16:00",
+            "checkout": "11:00",
+            "amenities": [
+                "ac",
+                "bathtub",
+                "bed_linens",
+                "board_games",
+                "carbon_monoxide_detector",
+                "ceiling_fan",
+                "coffee",
+                "coffee_maker",
+                "conditioner",
+                "cooking_basics",
+                "dishes_and_silverware",
+                "dryer",
+                "essentials",
+                "free_parking",
+                "hangers",
+                "heating",
+                "hot_water",
+                "hot_water_kettle",
+                "keurig_coffee_machine",
+                "kitchen",
+                "laptop_friendly_workspace",
+                "long_term_stays_allowed",
+                "luggage_dropoff_allowed",
+                "microwave",
+                "oven",
+                "patio_or_belcony",
+                "refrigerator",
+                "shampoo",
+                "shower_gel",
+                "smoke_detector",
+                "stove",
+                "street_parking",
+                "tv",
+                "wardrobe_or_closet",
+                "washer",
+                "wireless_internet"
+            ],
+            "capacity": {
+                "max": 7,
+                "bedrooms": 3,
+                "beds": 4,
+                "bathrooms": 1
+            },
+            "room_details": [
+                {
+                    "type": "exterior",
+                    "beds": []
+                },
+                {
+                    "type": "patio",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "kitchen",
+                    "beds": []
+                },
+                {
+                    "type": "living_room",
+                    "beds": [
+                        {
+                            "type": "couch_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "bunk_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "laundry_room",
+                    "beds": []
+                }
+            ],
+            "property_type": "house",
+            "room_type": "Entire Home",
+            "tags": [
+                "A011-Drew"
+            ],
+            "house_rules": {
+                "pets_allowed": true,
+                "smoking_allowed": false,
+                "events_allowed": false
+            },
+            "calendar_restricted": false,
+            "parent_child": null
+        },
+        {
+            "id": "8c6df08c-b5ff-4072-9464-7acd1498b70e",
+            "name": "Buyout[⚠️Please use Guesty to respond] | A008_Rayan",
+            "public_name": "The Castle House: Estate - Buyout",
+            "picture": "https://a0.muscache.com/im/pictures/prohost-api/Hosting-51236892/original/96e6a426-8b3b-4ef9-a038-a7a77cd073a9.jpeg?aki_policy=small",
+            "address": {
+                "number": null,
+                "street": "64278 East Broadway",
+                "city": "Joshua Tree",
+                "state": "CA",
+                "postcode": "92252",
+                "country": "US",
+                "country_name": "United States",
+                "coordinates": {
+                    "latitude": "34.16533661",
+                    "longitude": "-116.26165771"
+                },
+                "display": "64278 East Broadway, Joshua Tree, CA, 92252, US"
+            },
+            "timezone": "-0700",
+            "listed": true,
+            "currency": "USD",
+            "summary": "Units are designed to make the everyday extraordinaire. \n\nThe ultimate \"glamping\" experience! Featured multiple times on HGTV. The Castle House - Estate brings tiny home living to another level, located in the heart of Joshua Tree, CA and only minutes from the national park. This unique medieval piece of architecture blends outdoor living with an emphasis on entertainment. The Castle House - Estate is situated on 12 picturesque acres, surrounded by many more undeveloped acres.",
+            "description": "★ Dedicated Staff Member On Property 24/7\n\nWe own the two private houses across the street. Book and add more guests to your booking and or offer another experience. \n\n★ The Castle House - Bungalow | 3 Bed | 2 Bath | 2 RV Hook Ups | Full Gym | 2 Acres | 8 Guests\n★ The Castle House - Hideaway | 3 Bed | 2 Bath | 2 Acres | 8 Guests\n\nAdditional Add Ons:\n\n★ The Grand Ballroom - Nightclub | Movie Theater | Event Space",
+            "checkin": "16:00",
+            "checkout": "10:00",
+            "amenities": [
+                "ac",
+                "bbq_area",
+                "bed_linens",
+                "carbon_monoxide_detector",
+                "coffee_maker",
+                "extra_pillows_and_blankets",
+                "fire_extinguisher",
+                "first_aid_kit",
+                "free_parking",
+                "heating",
+                "kitchen",
+                "long_term_stays_allowed",
+                "luggage_dropoff_allowed",
+                "microwave",
+                "patio_or_belcony",
+                "pool",
+                "private_entrance",
+                "refrigerator",
+                "room_darkening_shades",
+                "shampoo",
+                "tv",
+                "wireless_internet"
+            ],
+            "capacity": {
+                "max": 32,
+                "bedrooms": 10,
+                "beds": 10,
+                "bathrooms": 3
+            },
+            "room_details": [
+                {
+                    "type": "backyard",
+                    "beds": []
+                },
+                {
+                    "type": "pool",
+                    "beds": []
+                },
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "kitchenette",
+                    "beds": []
+                },
+                {
+                    "type": "exterior",
+                    "beds": []
+                },
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "patio",
+                    "beds": []
+                },
+                {
+                    "type": "kitchen",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        },
+                        {
+                            "type": "floor_mattress_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        },
+                        {
+                            "type": "floor_mattress_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "common_spaces",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "sofa_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        },
+                        {
+                            "type": "floor_mattress_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        },
+                        {
+                            "type": "floor_mattress_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        },
+                        {
+                            "type": "floor_mattress_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        },
+                        {
+                            "type": "floor_mattress_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        },
+                        {
+                            "type": "floor_mattress_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        },
+                        {
+                            "type": "floor_mattress_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "balcony",
+                    "beds": []
+                },
+                {
+                    "type": "living_room",
+                    "beds": []
+                }
+            ],
+            "property_type": "castle",
+            "room_type": "Entire Home",
+            "tags": [
+                "A008-Rayan"
+            ],
+            "house_rules": {
+                "pets_allowed": true,
+                "smoking_allowed": true,
+                "events_allowed": true
+            },
+            "calendar_restricted": true,
+            "parent_child": null
+        },
+        {
+            "id": "9082bf15-9e1d-4d72-bb08-4b12b1c19a30",
+            "name": "GT2[⚠️Please use Guesty to respond] | A008_Rayan",
+            "public_name": "Guard Tower #2 with Cowboy Pool",
+            "picture": "https://a0.muscache.com/im/pictures/prohost-api/Hosting-51236591/original/6f8302b2-4961-4a51-ad77-adea76b8e5cc.jpeg?aki_policy=small",
+            "address": {
+                "number": null,
+                "street": "64278 Broadway",
+                "city": "Joshua Tree",
+                "state": "CA",
+                "postcode": "92252",
+                "country": "US",
+                "country_name": "United States",
+                "coordinates": {
+                    "latitude": "34.16525269",
+                    "longitude": "-116.26165771"
+                },
+                "display": "64278 Broadway, Joshua Tree, CA, 92252, US"
+            },
+            "timezone": "-0700",
+            "listed": true,
+            "currency": "USD",
+            "summary": "The ULTIMATE \"Tiny House\" experience!  Featured on HGTV: The Castle House Estate Guard Tower brings Tiny Home living to another level, located in the heart of Joshua Tree and minutes from the National Park. This unique medieval piece of architecture blends indoor-outdoor living with an emphasis on entertaining.  The Castle House Estate is situated on eight picturesque acres, surrounded by many more private undeveloped acres.",
+            "description": "Guard Tower 2\n\n3 LEVELS · 1 BED · 120 SQF\n\nThe Castle House Guard Tower is a custom three level living space & loft.  Each piece of furniture has been custom made to fit this unique round space which includes a queen sized bed in the loft.  Did we mention 1500 thread count sheets and Pure Care Plush memory foam pillows?\n\nThe full glass door and windows have been placed strategically to catch the desert light. \n\nFor outside adventurers step up to the rooftop hatch to enjoy your views or bring your sleeping bags and sleep under the stars.  ***WEATHER PERMITTING***\n\nEach tiny home includes it own outdoor wood burning fire-pit and two chairs perfect for enjoying the outside elements of Joshua Tree & where you can enjoy a few cold ones and roast s'mores. Each tiny home includes it own outdoor wood burning fire-pit, grill top and two chairs, perfect for enjoying the outside elements of Joshua Tree & where you can enjoy a few cold ones and roast s'mores.  Included in each tower is a mini-refrigerator and Nespresso coffee maker.  The restroom facility is just 20 steps away and has two private toilets, two hand sinks and urinal.  Two outside showers and one outdoor sink.  Nothing can be compared to showering outside with 365 degree views of The National Park.\n\n★ Dedicated Staff Member On Property 24/7\n\n@TheCastleHouseEstate\n\nThe Castle House Estate offers mini bar service.  Fresh pizzas, homemade cookies, snacks and beverage options.",
+            "checkin": "16:00",
+            "checkout": "10:00",
+            "amenities": [
+                "ac",
+                "bed_linens",
+                "carbon_monoxide_detector",
+                "coffee_maker",
+                "free_parking",
+                "garden_or_backyard",
+                "heating",
+                "hot_water",
+                "patio_or_belcony",
+                "pool",
+                "private_entrance",
+                "refrigerator",
+                "shampoo",
+                "street_parking",
+                "tv",
+                "wireless_internet"
+            ],
+            "capacity": {
+                "max": 2,
+                "bedrooms": 1,
+                "beds": 1,
+                "bathrooms": 1
+            },
+            "room_details": [
+                {
+                    "type": "exterior",
+                    "beds": []
+                },
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "pool",
+                    "beds": []
+                },
+                {
+                    "type": "patio",
+                    "beds": []
+                },
+                {
+                    "type": "backyard",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "balcony",
+                    "beds": []
+                },
+                {
+                    "type": "living_room",
+                    "beds": []
+                }
+            ],
+            "property_type": "castle",
+            "room_type": "Entire Home",
+            "tags": [
+                "A008-Rayan"
+            ],
+            "house_rules": {
+                "pets_allowed": true,
+                "smoking_allowed": true,
+                "events_allowed": true
+            },
+            "calendar_restricted": false,
+            "parent_child": null
+        },
+        {
+            "id": "5d6e56bd-8b24-436f-956a-98fd6c5229d9",
+            "name": "YT2[⚠️Please use Guesty to respond] | A008_Rayan",
+            "public_name": "Yurt Tent #2 With Cowboy Pool",
+            "picture": "https://a0.muscache.com/im/pictures/prohost-api/Hosting-51756566/original/3ac6552f-2173-4ccb-8d19-7ba97f13eefd.jpeg?aki_policy=small",
+            "address": {
+                "number": null,
+                "street": "64278 East Broadway",
+                "city": "Joshua Tree",
+                "state": "CA",
+                "postcode": "92252",
+                "country": "US",
+                "country_name": "United States",
+                "coordinates": {
+                    "latitude": "34.16533661",
+                    "longitude": "-116.26165771"
+                },
+                "display": "64278 East Broadway, Joshua Tree, CA, 92252, US"
+            },
+            "timezone": "-0700",
+            "listed": true,
+            "currency": "USD",
+            "summary": "Yurt Tent 2\n\n1 QUEEN BED · BUNK COT\n\nIndulge in the pinnacle of glamping luxury with Yurt Tent (#2) at Castle House Estate—a true haven for nature enthusiasts and style aficionados alike. This extraordinary yurt, featured on HGTV, takes traditional camping to new heights, offering a unique blend of comfort and adventure.",
+            "description": "Nestled in the heart of Joshua Tree and just minutes from the iconic National Park, Yurt Tent 2 is a captivating medieval retreat. Our one-of-a-kind compound seamlessly fuses indoor-outdoor living, creating an atmosphere tailored for entertainment and relaxation.\n\nSet against the breathtaking backdrop of 12 picturesque acres, surrounded by vast private undeveloped land, The Castle House: Estate invites you to immerse yourself in tranquility and exclusivity. The Yurt Tent 2 experience is designed to transport you to a realm where modern luxury meets the rugged beauty of the desert.\n\nFeaturing one queen bed and a cozy cot bunk bed (extra long) complete with extra sleeping bags, our yurt ensures a restful night's sleep under the desert stars. Immerse yourself in the serenity of nature without sacrificing the comforts of home.\n\nEmbark on a journey that transcends the ordinary—book Yurt Tent 2 at Castle House Estate and discover the perfect blend of adventure and opulence in the heart of Joshua Tree. Your unparalleled glamping experience awaits! \n\nImmerse yourself in the enchanting world of Yurt Tent 2 at Castle House Estate, where luxury and nature harmoniously converge to create an unforgettable glamping experience. \n\nOur carefully curated amenities are designed to elevate your stay and ensure that every moment is a celebration of comfort and adventure.\n\n★  Luxurious Interior:\nStep into the embrace of our thick canvas tent adorned with handwoven rugs, creating a cozy and stylish retreat that seamlessly blends rustic charm with modern luxury. The yurt features plush, high-quality bedding, ensuring a restful night's sleep under the desert stars.\n\n★  Outdoor Delight:\nJust steps away from your yurt, discover a private fire-pit, perfect for getting cozy and basking in the mesmerizing glow of the desert night. Whether you're stargazing or cooking your dinner over a hot flame, this outdoor haven adds a touch of magic to your glamping getaway.\n\n★  Cowboy Pool Oasis:\nIndulge in the elegance of our tiered hexagonal aqua blue cowboy pool, a refreshing oasis set against the picturesque backdrop of The Castle House: Estate. Unwind and soak up the sun, creating timeless memories surrounded by the beauty of Joshua Tree.\n\n★  Sauna Serenity (By Reservation Only | Fees Applicable):\nFor the ultimate relaxation, indulge in our traditional wood-burning sauna experience, available by reservation. Rejuvenate your body and mind as you escape into the soothing warmth of this exclusive amenity, adding an extra layer of luxury to your stay.\n\n★  Movie Magic (By Reservation Only | Fees Applicable):\nElevate your entertainment experience with our exclusive movie theater. By reservation, immerse yourself in cinematic splendor, creating a memorable evening in The Castle House: Estate's \"Grand Ballroom.\"\n\n★ Dedicated Staff Member On Property 24/7\n\nAt Yurt Tent 2, The Castle House: Estate ensures that every detail is thoughtfully curated to provide you with a glamping escape that transcends the ordinary. Book your stay and discover the perfect blend of opulence and nature in the heart of Joshua Tree, CA.\n\nYour Hosts at The Castle House: Estate\n\nYour experience at The Castle House: Estate is our top priority. If we're on the property during your stay, we'd love to extend a warm welcome in person and offer you a personal tour. We're here to ensure your stay exceeds expectations, and we're always happy to provide insights on the best local gems. \n\nAs you embark on your desert adventure, don't miss the breathtaking spectacle of sunrise and sunset—two moments that paint the Joshua Tree sky in hues of magic. Your hosts wish you a memorable stay, filled with tranquility, exploration, and the enchantment of the desert landscape.\n\nNestled in the heart of Joshua Tree, California, The Castle House Estate offers a unique blend of serenity and adventure against the backdrop of the mesmerizing desert landscape. Our neighborhood is a gateway to exploration and natural wonders, providing an immersive experience that captures the essence of the high desert.\n\n★ Joshua Tree National Park:\nJust minutes away, the world-renowned Joshua Tree National Park beckons with its iconic landscapes, rugged rock formations, and the distinctive Joshua Trees that stand as sentinels against the clear desert skies. Explore hiking trails, marvel at unique geological formations, and witness breathtaking sunsets that paint the horizon in hues of orange and pink.\n\n★ Local Art and Culture:\nThe Joshua Tree community is a hub of creativity and artistic expression. Explore local galleries, attend live performances, and immerse yourself in the vibrant arts scene that defines the character of this eclectic desert town.\n\n★ Charming Shops and Cafes:\nDiscover the charm of Joshua Tree's eclectic shops and cafes, offering a blend of bohemian flair and desert-inspired aesthetics. From vintage finds to handmade crafts, the local businesses contribute to the town's laid-back atmosphere.\n\n★ Stargazing Paradise:\nEmbrace the magic of the desert nights by indulging in some of the best stargazing opportunities in the world. The lack of light pollution in Joshua Tree allows for a clear view of the night sky, making it a haven for astronomy enthusiasts and those seeking a tranquil celestial experience.\n\n ★Community Events:\nImmerse yourself in the local community with events and festivals that celebrate the unique spirit of Joshua Tree. From music festivals to cultural gatherings, there's always something happening in this vibrant desert town.\n\nAs a guest at The Castle House: Estate, you're not just staying in a luxury accommodation; you're immersing yourself in the rich tapestry of Joshua Tree's natural wonders, artistic expression, and community warmth. Whether you seek adventure, relaxation, or a bit of both, our neighborhood provides the perfect canvas for your desert escape.\n\n★ Shared Restrooms for Yurts:\nPlease note that the restrooms for our Yurt accommodations are not located within the units. Instead, guests will have access to our well-maintained property restrooms, which boast flushable toilets, running water, and warm showers. Embrace the communal spirit while enjoying the modern comforts of cleanliness and convenience.\n\n★ Off-Grid Yurts:\nOur Yurts are a true escape into nature, offering an Off-Grid experience. This means they do not have access to electricity within the units. All lighting is battery-operated, providing a cozy and eco-friendly atmosphere. Outdoor plugs are conveniently located around the event space on the property, ensuring you can charge devices and stay connected while basking in the beauty of the desert.\n\n★ Pet-Friendly:\nBring your furry friends along for the adventure at The Castle House: Estate! We're delighted to welcome pets, ensuring that your entire family can enjoy the desert escape together. Simply agree to our pet rules and pay the standard pet fee, and your four-legged companions can revel in the beauty of Joshua Tree right alongside you. It's the perfect way to make lasting memories with your loved ones, both human and furry.\n\nAt The Castle House: Estate, we strive to create a harmonious blend of rustic charm and modern comfort, allowing you to fully immerse yourself in the unique desert experience. If you have any specific questions or concerns, feel free to reach out to our dedicated team—we're here to make your stay exceptional.",
+            "checkin": "16:00",
+            "checkout": "10:00",
+            "amenities": [
+                "bed_linens",
+                "carbon_monoxide_detector",
+                "free_parking",
+                "luggage_dropoff_allowed",
+                "pool",
+                "private_entrance",
+                "shampoo",
+                "single_level_home",
+                "wireless_internet"
+            ],
+            "capacity": {
+                "max": 4,
+                "bedrooms": 1,
+                "beds": 1,
+                "bathrooms": 1
+            },
+            "room_details": [
+                {
+                    "type": "pool",
+                    "beds": []
+                },
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "exterior",
+                    "beds": []
+                },
+                {
+                    "type": "living_room",
+                    "beds": []
+                },
+                {
+                    "type": "patio",
+                    "beds": []
+                },
+                {
+                    "type": "backyard",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        }
+                    ]
+                }
+            ],
+            "property_type": "tent",
+            "room_type": "Entire Home",
+            "tags": [
+                "A008-Rayan"
+            ],
+            "house_rules": {
+                "pets_allowed": true,
+                "smoking_allowed": true,
+                "events_allowed": false
+            },
+            "calendar_restricted": false,
+            "parent_child": null
+        },
+        {
+            "id": "93251963-d27f-4823-97b7-cfb217991310",
+            "name": "Electric Yurt [⚠️Please use Guesty to respond] | A008_Rayan",
+            "public_name": "Electric Yurt with Cowboy Pool",
+            "picture": "https://a0.muscache.com/im/pictures/prohost-api/Hosting-53368683/original/7c467c75-6da6-4a34-971c-86359d43e363.jpeg?aki_policy=small",
+            "address": {
+                "number": null,
+                "street": "64278 East Broadway",
+                "city": "Joshua Tree",
+                "state": "CA",
+                "postcode": "92252",
+                "country": "US",
+                "country_name": "United States",
+                "coordinates": {
+                    "latitude": "34.16533661",
+                    "longitude": "-116.26165771"
+                },
+                "display": "64278 East Broadway, Joshua Tree, CA, 92252, US"
+            },
+            "timezone": "-0700",
+            "listed": true,
+            "currency": "USD",
+            "summary": "Electric Yurt\n\n1 QUEEN BED · BUNK COT\n\nIndulge in the pinnacle of glamping luxury with Yurt at Castle House Estate—a true haven for nature enthusiasts and style aficionados alike. This extraordinary yurt, featured on HGTV, takes traditional camping to new heights, offering a unique blend of comfort and adventure.",
+            "description": "Nestled in the heart of Joshua Tree and just minutes from the iconic National Park, Electric Yurt is a captivating medieval retreat. Our one-of-a-kind compound seamlessly fuses indoor-outdoor living, creating an atmosphere tailored for entertainment and relaxation.\n\nSet against the breathtaking backdrop of 12 picturesque acres, surrounded by vast private undeveloped land, The Castle House: Estate invites you to immerse yourself in tranquility and exclusivity. The Electric Yurt experience is designed to transport you to a realm where modern luxury meets the rugged beauty of the desert.\n\nFeaturing one queen bed and a cozy cot bunk bed (extra long) complete with extra sleeping bags, our yurt ensures a restful night's sleep under the desert stars. Immerse yourself in the serenity of nature without sacrificing the comforts of home.\n\nEmbark on a journey that transcends the ordinary—book Electric Yurt at Castle House Estate and discover the perfect blend of adventure and opulence in the heart of Joshua Tree. Your unparalleled glamping experience awaits! \n\nImmerse yourself in the enchanting world of Electric Yurt at Castle House Estate, where luxury and nature harmoniously converge to create an unforgettable glamping experience. \n\nOur carefully curated amenities are designed to elevate your stay and ensure that every moment is a celebration of comfort and adventure.\n\n★  Luxurious Interior:\nStep into the embrace of our thick canvas tent adorned with handwoven rugs, creating a cozy and stylish retreat that seamlessly blends rustic charm with modern luxury. The yurt features plush, high-quality bedding, ensuring a restful night's sleep under the desert stars.\n\n★  Outdoor Delight:\nJust steps away from your yurt, discover a private fire-pit, perfect for getting cozy and basking in the mesmerizing glow of the desert night. Whether you're stargazing or cooking your dinner over a hot flame, this outdoor haven adds a touch of magic to your glamping getaway.\n\n★  Cowboy Pool Oasis:\nIndulge in the elegance of our tiered hexagonal aqua blue cowboy pool, a refreshing oasis set against the picturesque backdrop of The Castle House: Estate. Unwind and soak up the sun, creating timeless memories surrounded by the beauty of Joshua Tree.\n\n★  Sauna Serenity (By Reservation Only | Fees Applicable):\nFor the ultimate relaxation, indulge in our traditional wood-burning sauna experience, available by reservation. Rejuvenate your body and mind as you escape into the soothing warmth of this exclusive amenity, adding an extra layer of luxury to your stay.\n\n★  Movie Magic (By Reservation Only | Fees Applicable):\nElevate your entertainment experience with our exclusive movie theater. By reservation, immerse yourself in cinematic splendor, creating a memorable evening in The Castle House: Estate's \"Grand Ballroom.\"\n\n★ Dedicated Staff Member On Property 24/7\n\nAt Electric Yurt, The Castle House: Estate ensures that every detail is thoughtfully curated to provide you with a glamping escape that transcends the ordinary. Book your stay and discover the perfect blend of opulence and nature in the heart of Joshua Tree, CA.\n\nIf we are on property we will of course come say hello and give you a tour. Enjoy your stay and make sure you try and witness either sunrise or sunset or both.\n\nNestled in the heart of Joshua Tree, California, The Castle House Estate offers a unique blend of serenity and adventure against the backdrop of the mesmerizing desert landscape. Our neighborhood is a gateway to exploration and natural wonders, providing an immersive experience that captures the essence of the high desert.\n\n★ Joshua Tree National Park:\nJust minutes away, the world-renowned Joshua Tree National Park beckons with its iconic landscapes, rugged rock formations, and the distinctive Joshua Trees that stand as sentinels against the clear desert skies. Explore hiking trails, marvel at unique geological formations, and witness breathtaking sunsets that paint the horizon in hues of orange and pink.\n\n★ Local Art and Culture:\nThe Joshua Tree community is a hub of creativity and artistic expression. Explore local galleries, attend live performances, and immerse yourself in the vibrant arts scene that defines the character of this eclectic desert town.\n\n★ Charming Shops and Cafes:\nDiscover the charm of Joshua Tree's eclectic shops and cafes, offering a blend of bohemian flair and desert-inspired aesthetics. From vintage finds to handmade crafts, the local businesses contribute to the town's laid-back atmosphere.\n\n★ Stargazing Paradise:\nEmbrace the magic of the desert nights by indulging in some of the best stargazing opportunities in the world. The lack of light pollution in Joshua Tree allows for a clear view of the night sky, making it a haven for astronomy enthusiasts and those seeking a tranquil celestial experience.\n\n ★Community Events:\nImmerse yourself in the local community with events and festivals that celebrate the unique spirit of Joshua Tree. From music festivals to cultural gatherings, there's always something happening in this vibrant desert town.\n\nAs a guest at The Castle House: Estate, you're not just staying in a luxury accommodation; you're immersing yourself in the rich tapestry of Joshua Tree's natural wonders, artistic expression, and community warmth. Whether you seek adventure, relaxation, or a bit of both, our neighborhood provides the perfect canvas for your desert escape.\n\n★ Shared Restrooms for Yurts:\nPlease note that the restrooms for our Yurt accommodations are not located within the units. Instead, guests will have access to our well-maintained property restrooms, which boast flushable toilets, running water, and warm showers. Embrace the communal spirit while enjoying the modern comforts of cleanliness and convenience.\n\n★ Off-Grid Yurts:\nOur Yurts are a true escape into nature, offering an Off-Grid experience. This means they do not have access to electricity within the units. All lighting is battery-operated, providing a cozy and eco-friendly atmosphere. Outdoor plugs are conveniently located around the event space on the property, ensuring you can charge devices and stay connected while basking in the beauty of the desert.\n\n★ Pet-Friendly:\nBring your furry friends along for the adventure at The Castle House: Estate! We're delighted to welcome pets, ensuring that your entire family can enjoy the desert escape together. Simply agree to our pet rules and pay the standard pet fee, and your four-legged companions can revel in the beauty of Joshua Tree right alongside you. It's the perfect way to make lasting memories with your loved ones, both human and furry.\n\nAt The Castle House: Estate, we strive to create a harmonious blend of rustic charm and modern comfort, allowing you to fully immerse yourself in the unique desert experience. If you have any specific questions or concerns, feel free to reach out to our dedicated team—we're here to make your stay exceptional.",
+            "checkin": "16:00",
+            "checkout": "10:00",
+            "amenities": [
+                "bed_linens",
+                "carbon_monoxide_detector",
+                "extra_pillows_and_blankets",
+                "free_parking",
+                "garden_or_backyard",
+                "luggage_dropoff_allowed",
+                "pool",
+                "private_entrance",
+                "shampoo",
+                "wireless_internet"
+            ],
+            "capacity": {
+                "max": 4,
+                "bedrooms": 0,
+                "beds": 1,
+                "bathrooms": 1
+            },
+            "room_details": [
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "pool",
+                    "beds": []
+                },
+                {
+                    "type": "backyard",
+                    "beds": []
+                },
+                {
+                    "type": "studio",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "exterior",
+                    "beds": []
+                },
+                {
+                    "type": "living_room",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        }
+                    ]
+                }
+            ],
+            "property_type": "tent",
+            "room_type": "Entire Home",
+            "tags": [
+                "A008-Rayan"
+            ],
+            "house_rules": {
+                "pets_allowed": true,
+                "smoking_allowed": true,
+                "events_allowed": true
+            },
+            "calendar_restricted": false,
+            "parent_child": null
+        },
+        {
+            "id": "1bf432cc-829c-468b-8e63-dd84d4b6d458",
+            "name": "GT1[⚠️Please use Guesty to respond] | A008_Rayan",
+            "public_name": "Guard Tower #1 with Cowboy Pool",
+            "picture": "https://a0.muscache.com/im/pictures/prohost-api/Hosting-51234810/original/5231025a-4c39-4a96-ac9c-b088fceb5531.jpeg?aki_policy=small",
+            "address": {
+                "number": null,
+                "street": "64278 Broadway",
+                "city": "Joshua Tree",
+                "state": "CA",
+                "postcode": "92252",
+                "country": "US",
+                "country_name": "United States",
+                "coordinates": {
+                    "latitude": "34.16524887",
+                    "longitude": "-116.26155853"
+                },
+                "display": "64278 Broadway, Joshua Tree, CA, 92252, US"
+            },
+            "timezone": "-0700",
+            "listed": true,
+            "currency": "USD",
+            "summary": "Units designed to make the everyday extraordinary.\n\nThe ULTIMATE \"GLAMPING\" experience!  Featured on HGTV: The Castle House Estate brings Tiny Home living to another level, located in the heart of Joshua Tree and minutes from the National Park. This unique medieval piece of architecture blends indoor-outdoor living with an emphasis on entertaining.  The Castle House Estate is situated on eight picturesque acres, surrounded by many more private undeveloped acres.",
+            "description": "Guard Tower 1\n\n3 LEVELS · 1 BED · 120 SQF PER FLOOR\n\nThe ULTIMATE \"Tiny House\" experience!  \n\nThe Castle House Guard Tower is a custom three level living space & loft.  Each piece of furniture has been custom made to fit this unique round space which includes a queen sized bed in the loft.  Did we mention 1500 thread count sheets and Pure Care Plush memory foam pillows?\n\nThe full glass door and windows have been placed strategically to catch the desert light. \n\nFor outside adventurers step up to the rooftop hatch to enjoy your views or bring your sleeping bags and sleep under the stars.  ***WEATHER PERMITTING***\n\nEach tiny home includes it own outdoor wood burning fire-pit, grill top and two chairs, perfect for enjoying the outside elements of Joshua Tree & where you can enjoy a few cold ones and roast s'mores.  Included in each tower is a mini-refrigerator and Nespresso coffee maker.  The restroom facility is just 20 steps away and has two private toilets, two hand sinks and urinal.  Two outside showers and one outdoor sink.  Nothing can be compared to showering outside with 365 degree views of The National Park.\n@TheCastleHouseEstate\n\n★ Dedicated Staff Member On Property 24/7\n\nThe Castle House Estate offers full mini bar service.  Pizzas, homemade cookies, snacks and beverage options.",
+            "checkin": "16:00",
+            "checkout": "10:00",
+            "amenities": [
+                "ac",
+                "bed_linens",
+                "carbon_monoxide_detector",
+                "coffee_maker",
+                "free_parking",
+                "garden_or_backyard",
+                "hangers",
+                "heating",
+                "laptop_friendly_workspace",
+                "luggage_dropoff_allowed",
+                "patio_or_belcony",
+                "pool",
+                "private_entrance",
+                "refrigerator",
+                "shampoo",
+                "street_parking",
+                "tv",
+                "wireless_internet"
+            ],
+            "capacity": {
+                "max": 2,
+                "bedrooms": 1,
+                "beds": 1,
+                "bathrooms": 1
+            },
+            "room_details": [
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "patio",
+                    "beds": []
+                },
+                {
+                    "type": "backyard",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "pool",
+                    "beds": []
+                },
+                {
+                    "type": "exterior",
+                    "beds": []
+                },
+                {
+                    "type": "living_room",
+                    "beds": []
+                },
+                {
+                    "type": "balcony",
+                    "beds": []
+                }
+            ],
+            "property_type": "castle",
+            "room_type": "Entire Home",
+            "tags": [
+                "A008-Rayan"
+            ],
+            "house_rules": {
+                "pets_allowed": true,
+                "smoking_allowed": true,
+                "events_allowed": true
+            },
+            "calendar_restricted": false,
+            "parent_child": null
+        },
+        {
+            "id": "acfd64c1-a969-4ffc-9a34-fe138b609b65",
+            "name": "YT1[⚠️Please use Guesty to respond] | A008_Rayan",
+            "public_name": "Yurt Tent #1 with Cowboy Pool",
+            "picture": "https://a0.muscache.com/im/pictures/prohost-api/Hosting-51755458/original/1c05454d-28d4-4c38-9165-ccec3042dd03.jpeg?aki_policy=small",
+            "address": {
+                "number": null,
+                "street": "64278 East Broadway",
+                "city": "Joshua Tree",
+                "state": "CA",
+                "postcode": "92252",
+                "country": "US",
+                "country_name": "United States",
+                "coordinates": {
+                    "latitude": "34.16530228",
+                    "longitude": "-116.26190948"
+                },
+                "display": "64278 East Broadway, Joshua Tree, CA, 92252, US"
+            },
+            "timezone": "-0700",
+            "listed": true,
+            "currency": "USD",
+            "summary": "Yurt Tent 1\n\n1 QUEEN BED · 1 COT BUNK\n\nThe ULTIMATE \"Yurt\" experience! Featured on HGTV: The Castle House Estate Yurt Tent 1 brings traditional camping to another level.  Located in the heart of Joshua Tree and minutes from the National Park. This unique medieval compound blends indoor-outdoor living with an emphasis on entertaining. The Castle House Estate is situated on eight picturesque acres, surrounded by many more private undeveloped acres.",
+            "description": "Nestled in the heart of Joshua Tree and just minutes from the iconic National Park, Yurt Tent 1 is a captivating medieval retreat. Our one-of-a-kind compound seamlessly fuses indoor-outdoor living, creating an atmosphere tailored for entertainment and relaxation.\n\nSet against the breathtaking backdrop of 12 picturesque acres, surrounded by vast private undeveloped land, The Castle House: Estate invites you to immerse yourself in tranquility and exclusivity. The Yurt Tent 1 experience is designed to transport you to a realm where modern luxury meets the rugged beauty of the desert.\n\nFeaturing one queen bed and a cozy cot bunk bed (extra long) complete with extra sleeping bags, our yurt ensures a restful night's sleep under the desert stars. Immerse yourself in the serenity of nature without sacrificing the comforts of home.\n\nEmbark on a journey that transcends the ordinary—book Yurt Tent 1 at Castle House Estate and discover the perfect blend of adventure and opulence in the heart of Joshua Tree. Your unparalleled glamping experience awaits! \n\nImmerse yourself in the enchanting world of Yurt Tent 1 at Castle House Estate, where luxury and nature harmoniously converge to create an unforgettable glamping experience. \n\nOur carefully curated amenities are designed to elevate your stay and ensure that every moment is a celebration of comfort and adventure.\n\n★  Luxurious Interior:\nStep into the embrace of our thick canvas tent adorned with handwoven rugs, creating a cozy and stylish retreat that seamlessly blends rustic charm with modern luxury. The yurt features plush, high-quality bedding, ensuring a restful night's sleep under the desert stars.\n\n★  Outdoor Delight:\nJust steps away from your yurt, discover a private fire-pit, perfect for getting cozy and basking in the mesmerizing glow of the desert night. Whether you're stargazing or cooking your dinner over a hot flame, this outdoor haven adds a touch of magic to your glamping getaway.\n\n★  Cowboy Pool Oasis:\nIndulge in the elegance of our tiered hexagonal aqua blue cowboy pool, a refreshing oasis set against the picturesque backdrop of The Castle House: Estate. Unwind and soak up the sun, creating timeless memories surrounded by the beauty of Joshua Tree.\n\n★  Sauna Serenity (By Reservation Only | Fees Applicable):\nFor the ultimate relaxation, indulge in our traditional wood-burning sauna experience, available by reservation. Rejuvenate your body and mind as you escape into the soothing warmth of this exclusive amenity, adding an extra layer of luxury to your stay.\n\n★  Movie Magic (By Reservation Only | Fees Applicable):\nElevate your entertainment experience with our exclusive movie theater. By reservation, immerse yourself in cinematic splendor, creating a memorable evening in The Castle House: Estate's \"Grand Ballroom.\"\n\n★ Dedicated Staff Member On Property 24/7\n\nAt Yurt Tent 1, The Castle House: Estate ensures that every detail is thoughtfully curated to provide you with a glamping escape that transcends the ordinary. Book your stay and discover the perfect blend of opulence and nature in the heart of Joshua Tree, CA.\n\nIf we are on property we will of course come say hello and give you a tour. Enjoy your stay and make sure you try and witness either sunrise or sunset or both.\n\nNestled in the heart of Joshua Tree, California, The Castle House Estate offers a unique blend of serenity and adventure against the backdrop of the mesmerizing desert landscape. Our neighborhood is a gateway to exploration and natural wonders, providing an immersive experience that captures the essence of the high desert.\n\n★ Joshua Tree National Park:\nJust minutes away, the world-renowned Joshua Tree National Park beckons with its iconic landscapes, rugged rock formations, and the distinctive Joshua Trees that stand as sentinels against the clear desert skies. Explore hiking trails, marvel at unique geological formations, and witness breathtaking sunsets that paint the horizon in hues of orange and pink.\n\n★ Local Art and Culture:\nThe Joshua Tree community is a hub of creativity and artistic expression. Explore local galleries, attend live performances, and immerse yourself in the vibrant arts scene that defines the character of this eclectic desert town.\n\n★ Charming Shops and Cafes:\nDiscover the charm of Joshua Tree's eclectic shops and cafes, offering a blend of bohemian flair and desert-inspired aesthetics. From vintage finds to handmade crafts, the local businesses contribute to the town's laid-back atmosphere.\n\n★ Stargazing Paradise:\nEmbrace the magic of the desert nights by indulging in some of the best stargazing opportunities in the world. The lack of light pollution in Joshua Tree allows for a clear view of the night sky, making it a haven for astronomy enthusiasts and those seeking a tranquil celestial experience.\n\n ★Community Events:\nImmerse yourself in the local community with events and festivals that celebrate the unique spirit of Joshua Tree. From music festivals to cultural gatherings, there's always something happening in this vibrant desert town.\n\nAs a guest at The Castle House: Estate, you're not just staying in a luxury accommodation; you're immersing yourself in the rich tapestry of Joshua Tree's natural wonders, artistic expression, and community warmth. Whether you seek adventure, relaxation, or a bit of both, our neighborhood provides the perfect canvas for your desert escape.\n\n★ Shared Restrooms for Yurts:\nPlease note that the restrooms for our Yurt accommodations are not located within the units. Instead, guests will have access to our well-maintained property restrooms, which boast flushable toilets, running water, and warm showers. Embrace the communal spirit while enjoying the modern comforts of cleanliness and convenience.\n\n★ Off-Grid Yurts:\nOur Yurts are a true escape into nature, offering an Off-Grid experience. This means they do not have access to electricity within the units. All lighting is battery-operated, providing a cozy and eco-friendly atmosphere. Outdoor plugs are conveniently located around the event space on the property, ensuring you can charge devices and stay connected while basking in the beauty of the desert.\n\n★ Pet-Friendly:\nBring your furry friends along for the adventure at The Castle House: Estate! We're delighted to welcome pets, ensuring that your entire family can enjoy the desert escape together. Simply agree to our pet rules and pay the standard pet fee, and your four-legged companions can revel in the beauty of Joshua Tree right alongside you. It's the perfect way to make lasting memories with your loved ones, both human and furry.\n\nAt The Castle House: Estate, we strive to create a harmonious blend of rustic charm and modern comfort, allowing you to fully immerse yourself in the unique desert experience. If you have any specific questions or concerns, feel free to reach out to our dedicated team—we're here to make your stay exceptional.",
+            "checkin": "16:00",
+            "checkout": "10:00",
+            "amenities": [
+                "bed_linens",
+                "carbon_monoxide_detector",
+                "free_parking",
+                "pool",
+                "private_entrance",
+                "shampoo",
+                "wireless_internet"
+            ],
+            "capacity": {
+                "max": 4,
+                "bedrooms": 1,
+                "beds": 1,
+                "bathrooms": 1
+            },
+            "room_details": [
+                {
+                    "type": "backyard",
+                    "beds": []
+                },
+                {
+                    "type": "patio",
+                    "beds": []
+                },
+                {
+                    "type": "exterior",
+                    "beds": []
+                },
+                {
+                    "type": "pool",
+                    "beds": []
+                },
+                {
+                    "type": "living_room",
+                    "beds": []
+                },
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        }
+                    ]
+                }
+            ],
+            "property_type": "tent",
+            "room_type": "Entire Home",
+            "tags": [
+                "A008-Rayan"
+            ],
+            "house_rules": {
+                "pets_allowed": true,
+                "smoking_allowed": true,
+                "events_allowed": false
+            },
+            "calendar_restricted": false,
+            "parent_child": null
+        },
+        {
+            "id": "2115225f-7f0c-4c52-a33e-da9b0f9c4060",
+            "name": "Bungalow[⚠️Please use Guesty to respond] | A008_Rayan",
+            "public_name": "The Castle House: Bungalow w Private Spa & Gym",
+            "picture": "https://a0.muscache.com/im/pictures/7aa49f92-ef11-4d02-b4c2-04de0faa0b19.jpg?aki_policy=small",
+            "address": {
+                "number": null,
+                "street": "64231 East Broadway",
+                "city": "Joshua Tree",
+                "state": "CA",
+                "postcode": "92252",
+                "country": "US",
+                "country_name": "United States",
+                "coordinates": {
+                    "latitude": "34.16403961",
+                    "longitude": "-116.26195526"
+                },
+                "display": "64231 East Broadway, Joshua Tree, CA, 92252, US"
+            },
+            "timezone": "-0700",
+            "listed": true,
+            "currency": "USD",
+            "summary": "The Castle House – Bungalow is the perfect desert get-a-way house! This beautiful newly renovated 3-bedroom 2-bath is the sister house to The Castle House Estate bringing desert living to another level. This secluded and spacious 2-acre bungalow house is ideal for a fabulous unforgettable stay. Located in the heart of Joshua Tree and only minutes from Downtown Joshua Tree and the entrance to the National Park.",
+            "description": "This cozy house has beautiful daytime views and sparkling diamond lights at night. Bungalow House has been featured on HGTV and numerous other TV, Film and media brands and blends indoor-outdoor living with an emphasis on entertaining. The Castle House – Bungalow is situated on 2 picturesque acres, surrounded by many more private undeveloped acres.\n\nYou will sleep on an organic bed, 800 thread count organic linens, in a home decorated and sourced from local artisans keeping in mind eco-conscious living. Highlights include:\n\n★ 7 Seat Spa/Jacuzzi (waterfall, lighting and speaker)\n★ Room Service - Locally Curated Food & Beverage Items\n★ 2 Acre Fully Fenced in Private Lot\n★ Central Heat\n★ Eco-Friendly Evaporative Cooler\n★ Nespresso Coffee Maker\n★ 65\" OLED Curved TV with Apple TV\n★ Propane BBQ Grill\n★ Outdoor Wood Burning Fire-pit\n★ Refrigerator with Ice Maker, Stovetop, Dishwasher and Microwave\n★ Private Deck with Loungers\n★ Large Outdoor Spaces with Over 100 Native Plants and Trees\n★ Record Player with Bluetooth connection\n★ Newly Remodeled\n★ Pet Friendly*\n★ Minutes from Joshua Tree National Park\n★ Private Nightclub / Roller Rink (Available For Rent By The Hour)\n★ New Tiered Hexagonal Aqua Blue Cowboy Pool (Property Shared)\n\n\nOUTDOORS\n\nYou simply won’t believe the outdoor space. Gorgeously landscaped with plenty of private corners for alone time during the day and an outdoor dining table big enough for 6 guests to come together at night. Where will you spend your day? Lounging around with a good book on cozy indoor furniture by the fireplace, catching some desert rays on our outdoor loungers, or sitting by the outdoor fire-pit roasting some s'mores. Solar lights keep the fun outside even after the sunsets so you can cozy up and stargazing all night.\n\nFAMILY & PETS\n\nWe are family and dog friendly! Children 2 years old and above must be included as part of the total guest count. Dogs are accepted on a case by case basis and must be under 25 lbs. Please send us the breed and age for consideration. We will request a $75 cleaning & companion fee per pet. Please see our House Rules for more information.\n\nEXTRA GUESTS\n\nAny day guests must be approved prior to arrival. Day guests must leave by 10pm. Children are considered as part of the total guest count.\n\nPLEASE BE RESPECTFUL OF OUR NEIGHBORS! Follow our Good Neighbor Policy of no outside noise after 10pm and before 8am. Guests must refrain from any outdoor music, noise or other disruptions that may cause a disturbance to the community during quiet hours. Failure to respect quiet hours after an initial warning may result in cancellation of your reservation without refund.\n\nPROTECTION\n\nOur bookings are protected by SUPERHOG, our trust and safety partner, so we don't need to charge our guests a security deposit. Because of this we need our guests to verify themselves after the booking is confirmed, which only takes less than a minute and is required prior to arrival. You will be contacted directly by SUPERHOG via text with a url link to start your verification.\n\nRESPECT\n\nThere are strict county ordinances regarding excessive noise and light pollution after 10pm. Please respect our neighbors, and refrain from loud noises and outdoor music by 10pm. Home is equipped with a decibel monitoring sensor located inside and outside of the home to ensure that neighborhood noise levels are respected. Sink into the sounds of desert solitude, quiet nights and quiet stars...\n\nCHERISH\n\nSome of the things visitors to the high desert cherish the most are clean air, mesmerizing night skies and the abundance of wildlife and fauna. Cigarette butts, trash and food left on the ground can hurt our precious ecosystem. 150 acres burned down the road because of one cigarette.\n\nCLEANING\n\nHealth & safety is our number one priority. Our in-house cleaning team is trained on CDC and WHO protocols. We take extra measures to ensure the home is sanitized and safe before every arrival. For this reason we aren’t able to offer early check-ins or late check-outs. Thank you for understanding!\n\nPHOTOSHOOTS & VIDEOS\n\nIf you’re interested in doing a photoshoot or shooting a video, please let us know what it is for. If approved, we have an additional fee for licensing and usage.\n\nWILDLIFE\n\nYou surely could encounter wildlife on your stay including families of Quail, rare Albino lizards, insects, snakes, squirrels and the endangered kangaroo mice.\n\nNO SMOKING\n\nNo smoking or burning candles indoors. This is a non-smoking home. Any and all smoking should be kept outdoors at least 15 feet away from any exterior doors. There will be a $250 charge for anyone not honoring this guideline.\n\nThis property is across the street from our sister property, The Castle House Estate, which consists of 4 unique stays and a total of 12 units across 12 acres. The grounds have been meticulously manicured and the property has a resort vibe. \n\nThe Castle House Estate is available for full property buyouts and has a 3500 square foot meeting space that can be used as a dining hall, nightclub and a roller rink. There is an additional 2000 square feet of white cantilevered concrete patios on all four sides of the structure. The sunset patio has a 250 person capacity for private dinners with views of the National Park. For inquires please give us a shout!\n\nPrivate movie nights, roller skating nights or just a nightclub can be reserved separately from your booking.",
+            "checkin": "16:00",
+            "checkout": "10:00",
+            "amenities": [
+                "ac",
+                "alfresco_dining",
+                "bathtub",
+                "bbq_area",
+                "bed_linens",
+                "books",
+                "carbon_monoxide_detector",
+                "coffee_maker",
+                "cooking_basics",
+                "dishes_and_silverware",
+                "dishwasher",
+                "dryer",
+                "essentials",
+                "ethernet_connection",
+                "exercise_equipment",
+                "extra_pillows_and_blankets",
+                "fireplace",
+                "fireplace_guards",
+                "fire_extinguisher",
+                "free_parking",
+                "garden_or_backyard",
+                "gym",
+                "hair_dryer",
+                "hangers",
+                "heating",
+                "hot_water",
+                "iron",
+                "jacuzzi",
+                "kitchen",
+                "laptop_friendly_workspace",
+                "long_term_stays_allowed",
+                "luggage_dropoff_allowed",
+                "microwave",
+                "nespresso_machine",
+                "oven",
+                "patio_or_belcony",
+                "pool",
+                "private_entrance",
+                "refrigerator",
+                "room_darkening_shades",
+                "shampoo",
+                "single_level_home",
+                "smoke_detector",
+                "stove",
+                "street_parking",
+                "sun_loungers",
+                "theme_room",
+                "toaster",
+                "tv",
+                "washer",
+                "wireless_internet"
+            ],
+            "capacity": {
+                "max": 8,
+                "bedrooms": 3,
+                "beds": 3,
+                "bathrooms": 2
+            },
+            "room_details": [
+                {
+                    "type": "exterior",
+                    "beds": []
+                },
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "garage",
+                    "beds": []
+                },
+                {
+                    "type": "backyard",
+                    "beds": []
+                },
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                },
+                {
+                    "type": "patio",
+                    "beds": []
+                },
+                {
+                    "type": "dining_room",
+                    "beds": []
+                },
+                {
+                    "type": "laundry_room",
+                    "beds": []
+                },
+                {
+                    "type": "kitchen",
+                    "beds": []
+                },
+                {
+                    "type": "office",
+                    "beds": []
+                },
+                {
+                    "type": "gym",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "king_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "common_spaces",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "queen_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "living_room",
+                    "beds": [
+                        {
+                            "type": "floor_mattress_bed",
+                            "quantity": 2
+                        }
+                    ]
+                },
+                {
+                    "type": "pool",
+                    "beds": []
+                }
+            ],
+            "property_type": "bungalow",
+            "room_type": "Entire Home",
+            "tags": [
+                "A008-Rayan"
+            ],
+            "house_rules": {
+                "pets_allowed": true,
+                "smoking_allowed": false,
+                "events_allowed": true
+            },
+            "calendar_restricted": false,
+            "parent_child": null
+        },
+        {
+            "id": "2b594f70-ac6c-458c-94bb-f9e55aa6764d",
+            "name": "Container[⚠️Please use Guesty to respond] | A008_Rayan",
+            "public_name": "Shipping Container Home with Cowboy Pool",
+            "picture": "https://a0.muscache.com/im/pictures/prohost-api/Hosting-51176144/original/85652b13-3135-43f6-8544-e33715f8b948.jpeg?aki_policy=small",
+            "address": {
+                "number": null,
+                "street": "64278 Broadway",
+                "city": "Joshua Tree",
+                "state": "CA",
+                "postcode": "92252",
+                "country": "US",
+                "country_name": "United States",
+                "coordinates": {
+                    "latitude": "34.16525269",
+                    "longitude": "-116.26165771"
+                },
+                "display": "64278 Broadway, Joshua Tree, CA, 92252, US"
+            },
+            "timezone": "-0700",
+            "listed": true,
+            "currency": "USD",
+            "summary": "The ultimate \"Glamping\" experience in Joshua Tree. Our custom-made Shipping Container Home brings tiny home living to another level. Located in the heart of Joshua Tree, CA and only minutes from the entrance to the National Park. This 12-acre compound is ideal for a fabulous unforgettable get-a-way.",
+            "description": "The space\n\nThis tiny home is located at the beautiful Castle House Estate. This unique medieval piece of architecture has been featured on HGTV and numerous other TV, Film and media brands and blends indoor-outdoor living with an emphasis on entertaining. The Castle House Estate is situated on 12 picturesque acres, surrounded by many more private undeveloped acres.\n\nYou will sleep on organic sofa bed, 800 thread count organic linens, in a tiny home decorated and sourced from local artisans keeping in mind eco-conscious living. Highlights include:\n\n★ New Tiered Hexagonal Aqua Blue Cowboy Pool (Property Shared)\n★ Room Service - Locally Curated Food & Beverage Items\n★ 12 Acre Compound\n★ Central AC / Heat\n★ Nespresso Coffee Maker\n★ 60\" Flatscreen TV with Roku Stick\n★ Outdoor Wood Burning Fire-pit\n★ Mini Refrigerator and Microwave\n★ Private restroom - Sink, Toilet and Shower\n★ Private Rooftop Deck with Loungers\n★ Large Outdoor Spaces with Over 500 Native Plants and Trees\n★ Record Player with Bluetooth connection\n★ Newly Remodeled\n★ Pet Friendly*\n★ Minutes From Joshua Tree National Park\n★ Private Nightclub / Roller Rink (Available For Rent By The Hour)\n\nOUTDOORS\n\nYou simply won’t believe the outdoor space. Gorgeously landscaped with plenty of private corners for alone time during the day and an outdoor dining table big enough for 4 guests to come together at night. Where will you spend your day? Lounging around with a good book on the rooftop deck, catching some desert rays in the pool, or sitting by the outdoor fire-pit roasting some s'mores. A fire-pit, outdoor sink and 4 outdoor showers mean you’ll almost never have to go inside! Solar lights keep the fun outside even after the sunsets so you can cozy up on the rooftop loungers and stargazing all night.\n\nFAMILY & PETS\n\nWe are family and dog friendly! Children 2 years old and above must be included as part of the total guest count. Dogs are accepted on a case by case basis and must be under 25 lbs. Please send us the breed and age for consideration. We will request a $75 cleaning & companion fee per pet. Please see our House Rules for more information.\n\nEXTRA GUESTS\n\nAny day guests must be approved prior to arrival. Day guests must leave by 10pm. Children are considered as part of the total guest count.\n\nPLEASE BE RESPECTFUL OF OUR NEIGHBORS! Follow our Good Neighbor Policy of no outside noise after 10pm and before 8am. Guests must refrain from any outdoor music, noise or other disruptions that may cause a disturbance to the community during quiet hours. Failure to respect quiet hours after an initial warning may result in cancellation of your reservation without refund.\n\nPROTECTION\n\nOur bookings are protected by SUPERHOG, our trust and safety partner, so we don't need to charge our guests a security deposit. Because of this we need our guests to verify themselves after the booking is confirmed, which only takes less than a minute and is required prior to arrival. You will be contacted directly by SUPERHOG via text with a url link to start your verification.\n\nRESPECT\n\nThere are strict county ordinances regarding excessive noise and light pollution after 10pm. Please respect our neighbors, and refrain from loud noises and outdoor music by 10pm. Home is equipped with a decibel monitoring sensor located inside and outside of the home to ensure that neighborhood noise levels are respected. Sink into the sounds of desert solitude, quiet nights and quiet stars...\n\nCHERISH\n\nSome of the things visitors to the high desert cherish the most are clean air, mesmerizing night skies and the abundance of wildlife and fauna. Cigarette butts, trash and food left on the ground can hurt our precious ecosystem. 150 acres burned down the road because of one cigarette.\n\nCLEANING\n\nHealth & safety is our number one priority. Our in-house cleaning team is trained on CDC and WHO protocols. We take extra measures to ensure the home is sanitized and safe before every arrival. For this reason we aren’t able to offer early check-ins or late check-outs. Thank you for understanding!\n\nPHOTOSHOOTS & VIDEOS\n\nIf you’re interested in doing a photoshoot or shooting a video, please let us know what it is for. If approved, we have an additional fee for licensing and usage.\n\nWILDLIFE\n\nYou surely could encounter wildlife on your stay including families of Quail, rare Albino lizards, insects, snakes, squirrels and the endangered kangaroo mice.\n\nNO SMOKING\n\nNo smoking or burning candles indoors on the rooftop deck. This is a non-smoking home. Any and all smoking should be kept outdoors at least 15 feet away from any exterior doors. There will be a $250 charge for anyone not honoring this guideline.\n\nIf we are on property we will of course come say hello and give you a tour. Enjoy your stay and make sure you try and witness either sunrise or sunset or both.\n\nThe Castle House Estate is located in Joshua Tree, CA and is only minutes from downtown Joshua Tree and the entrance to the west entrance to the national park. We are located off a blacktop road and there is no off roading required to get to our location.\n\nOther things to note\n\nThis property consists of 4 unique stays and a total of 12 units across 12 acres. The grounds have been meticulously manicured and the property has a resort vibe. The Castle House Estate is available for full property buyouts and has a 3500 square foot meeting space that can be used as a dining hall, nightclub and a roller rink. There is an additional 2000 square feet of white cantilevered concrete patio on all four sides of the structure. The sunset patio has a 250 person capacity for private dinners with views of the National Park. For inquires please give us a shout!",
+            "checkin": "16:00",
+            "checkout": "10:00",
+            "amenities": [
+                "ac",
+                "bed_linens",
+                "carbon_monoxide_detector",
+                "coffee_maker",
+                "dishes_and_silverware",
+                "essentials",
+                "fire_extinguisher",
+                "free_parking",
+                "garden_or_backyard",
+                "hangers",
+                "heating",
+                "hot_water",
+                "laptop_friendly_workspace",
+                "long_term_stays_allowed",
+                "luggage_dropoff_allowed",
+                "microwave",
+                "patio_or_belcony",
+                "pool",
+                "private_entrance",
+                "refrigerator",
+                "shampoo",
+                "single_level_home",
+                "smoke_detector",
+                "tv",
+                "wireless_internet"
+            ],
+            "capacity": {
+                "max": 2,
+                "bedrooms": 1,
+                "beds": 1,
+                "bathrooms": 1
+            },
+            "room_details": [
+                {
+                    "type": "patio",
+                    "beds": []
+                },
+                {
+                    "type": "exterior",
+                    "beds": []
+                },
+                {
+                    "type": "kitchenette",
+                    "beds": []
+                },
+                {
+                    "type": "dining_room",
+                    "beds": []
+                },
+                {
+                    "type": "backyard",
+                    "beds": []
+                },
+                {
+                    "type": "pool",
+                    "beds": []
+                },
+                {
+                    "type": "balcony",
+                    "beds": []
+                },
+                {
+                    "type": "bedroom",
+                    "beds": [
+                        {
+                            "type": "sofa_bed",
+                            "quantity": 1
+                        }
+                    ]
+                },
+                {
+                    "type": "full_bathroom",
+                    "beds": []
+                }
+            ],
+            "property_type": "apartment",
+            "room_type": "Entire Home",
+            "tags": [
+                "A008-Rayan"
+            ],
+            "house_rules": {
+                "pets_allowed": true,
+                "smoking_allowed": true,
+                "events_allowed": true
+            },
+            "calendar_restricted": false,
+            "parent_child": null
+        }
+    ],
+    "links": {
+        "first": "http://public.api.hospitable.com/v2/properties?page=1",
+        "last": "http://public.api.hospitable.com/v2/properties?page=22",
+        "prev": null,
+        "next": "http://public.api.hospitable.com/v2/properties?page=2"
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 22,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "active": false
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=1",
+                "label": "1",
+                "active": true
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=2",
+                "label": "2",
+                "active": false
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=3",
+                "label": "3",
+                "active": false
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=4",
+                "label": "4",
+                "active": false
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=5",
+                "label": "5",
+                "active": false
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=6",
+                "label": "6",
+                "active": false
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=7",
+                "label": "7",
+                "active": false
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=8",
+                "label": "8",
+                "active": false
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=9",
+                "label": "9",
+                "active": false
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=10",
+                "label": "10",
+                "active": false
+            },
+            {
+                "url": null,
+                "label": "...",
+                "active": false
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=21",
+                "label": "21",
+                "active": false
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=22",
+                "label": "22",
+                "active": false
+            },
+            {
+                "url": "http://public.api.hospitable.com/v2/properties?page=2",
+                "label": "Next &raquo;",
+                "active": false
+            }
+        ],
+        "path": "http://public.api.hospitable.com/v2/properties",
+        "per_page": 10,
+        "to": 10,
+        "total": 213
+    }
+}

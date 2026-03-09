@@ -1,0 +1,14 @@
+# Deny directory listing
+Options -Indexes
+
+# Deny direct browser access to configurations, logs, and documentation
+<FilesMatch "\.(env|json|log|md|git)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Protect backend scripts from direct browser access
+<FilesMatch "^(cron|db_setup|mock_api|config|hospitable_api|slack|shift_scheduler)\.php$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

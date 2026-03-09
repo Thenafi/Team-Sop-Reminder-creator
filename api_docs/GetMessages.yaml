@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: Hospitable Public API
+  version: "2.0"
+  description: Retrieve the message thread for a single reservation.
+servers:
+  - url: https://public.api.hospitable.com/v2
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    ReservationId:
+      name: uuid
+      in: path
+      required: true
+      description: Reservation UUID.
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    ##— Response envelope -----------------------------------------------------
+    MessageListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: $ref: '#/components/schemas/Message'
+
+    ##— Core objects ----------------------------------------------------------
+    Message:
+      type: object
+      required:
+        [platform, platform_id, conversation_id, content_type,
+         body, sender_type, created_at]
+      properties:
+        platform:       { type: string, example: airbnb }
+        platform_id:    { oneOf: [{ type: string }, { type: integer }], example: 24354549981 }
+        conversation_id:{ type: string, format: uuid }
+        reservation_id: { type: string, format: uuid, nullable: true }
+        content_type:   { type: string, example: text/plain }
+        body:           { type: string }
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string, example: image }
+              url:  { type: string, format: uri }
+        sender_type:    { type: string, enum: [host, guest, teammate] }
+        sender_role:    { type: string, nullable: true, example: host }
+        sender:
+          type: object
+          properties:
+            first_name:     { type: string }
+            full_name:      { type: string }
+            locale:         { type: string }
+            picture_url:    { type: string, format: uri }
+            thumbnail_url:  { type: string, format: uri }
+            location:       { type: string, nullable: true }
+        user:
+          type: object
+          nullable: true
+          description: Present when the sender is an internal Hospitable user.
+          properties:
+            id:    { type: string, format: uuid }
+            email: { type: string, format: email }
+            name:  { type: string }
+        created_at:     { type: string, format: date-time }
+
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+
+paths:
+  /reservations/{uuid}/messages:
+    get:
+      summary: List reservation messages
+      description: >
+        Returns the chronological message history for a reservation.
+      tags: [Messages]
+      security:
+        - bearerAuth: []   # Requires **message:read** scope
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema: $ref: '#/components/schemas/MessageListResponse'
+        '400':
+          description: Invalid UUID or bad token
+          content:
+            application/json:
+              schema: $ref: '#/components/schemas/Error'
