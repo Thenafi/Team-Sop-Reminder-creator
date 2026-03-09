@@ -14,6 +14,29 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/hospitable_api.php';
 
+// ─── AJAX Handlers ───────────────────────────────────────────
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'sync_properties') {
+    requireAuth();
+    header('Content-Type: application/json');
+    try {
+        $apiProperties = fetchProperties();
+        $config = loadConfig();
+        if (!isset($config['properties'])) $config['properties'] = [];
+        foreach ($apiProperties as $prop) {
+            $uuid = $prop['id'];
+            $config['properties'][$uuid] = [
+                'name' => $prop['name'] ?? $prop['public_name'] ?? 'Unnamed',
+                'timezone' => $prop['timezone'] ?? '-0500'
+            ];
+        }
+        saveConfig($config);
+        echo json_encode(['success' => true, 'properties' => $config['properties']]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 // ─── Auth ────────────────────────────────────────────────────
 requireAuth();
 
@@ -96,31 +119,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ─── Load data ───────────────────────────────────────────────
 $config = loadConfig();
 
-// Fetch properties from API
-$apiProperties = [];
-try {
-    $apiProperties = fetchProperties();
-} catch (Exception $e) {
-    $message = $message ?: 'Could not fetch properties from API: ' . $e->getMessage();
-    $messageType = $messageType ?: 'error';
-}
-
 // Ensure structure exists
 if (!isset($config['properties'])) $config['properties'] = [];
 if (!isset($config['sops'])) $config['sops'] = [];
-
-// Merge API properties into config (maintain a master list for UI checkboxes)
-foreach ($apiProperties as $prop) {
-    $uuid = $prop['id'];
-    $tz = $prop['timezone'] ?? '-0500';
-    $name = $prop['name'] ?? $prop['public_name'] ?? 'Unnamed';
-
-    $config['properties'][$uuid] = [
-        'name' => $name,
-        'timezone' => $tz,
-    ];
-}
-saveConfig($config);
 
 // Fetch reminders from DB
 $reminders = [];
@@ -140,6 +141,7 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SOP Reminder Manager</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -357,6 +359,11 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
 
                     <div class="field-row">
                         <label>Assign to Properties</label>
+                        <div style="margin-bottom: 5px; display: flex; gap: 8px;">
+                            <input type="text" class="property-search" placeholder="Search properties..." style="flex: 1; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 0.8rem;">
+                            <button type="button" class="btn btn-secondary btn-sm select-all-btn">Select All</button>
+                            <button type="button" class="btn btn-secondary btn-sm clear-properties-btn">Clear</button>
+                        </div>
                         <div class="property-checkbox-list">
                             <?php foreach ($config['properties'] as $uuid => $prop): ?>
                                 <?php $isChecked = in_array($uuid, $sop['properties'] ?? []); ?>
@@ -372,7 +379,7 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
         </div>
 
         <div class="actions" style="margin-top:20px;">
-            <button type="submit" class="btn btn-primary" style="font-size: 1.1rem; padding: 10px 24px;">💾 Save All SOPs</button>
+            <button type="submit" id="save-all-btn" class="btn btn-primary" style="font-size: 1.1rem; padding: 10px 24px;">💾 Save All SOPs</button>
         </div>
     </form>
 
@@ -460,6 +467,11 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
 
                     <div class="field-row">
                         <label>Assign to Properties</label>
+                        <div style="margin-bottom: 5px; display: flex; gap: 8px;">
+                            <input type="text" class="property-search" placeholder="Search properties..." style="flex: 1; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 0.8rem;">
+                            <button type="button" class="btn btn-secondary btn-sm select-all-btn">Select All</button>
+                            <button type="button" class="btn btn-secondary btn-sm clear-properties-btn">Clear</button>
+                        </div>
                         <div class="property-checkbox-list">
                             ${checkboxesHTML}
                         </div>
@@ -469,6 +481,44 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
             
             container.insertAdjacentHTML('beforeend', html);
         }
+
+        $(document).ready(function() {
+            // Background dynamic load of API properties
+            $.get('?ajax=sync_properties', function(res) {
+                if (res.success && res.properties) {
+                    Object.assign(propertyList, res.properties);
+                    console.log("Properties synced with API dynamically.");
+                }
+            });
+
+            // Property Search Support
+            $(document).on('keyup', '.property-search', function() {
+                var term = $(this).val().toLowerCase();
+                $(this).closest('.field-row').find('.property-checkbox-item').each(function() {
+                    var text = $(this).text().toLowerCase();
+                    $(this).toggle(text.indexOf(term) > -1);
+                });
+            });
+
+            // Select All Checkboxes
+            $(document).on('click', '.select-all-btn', function() {
+                // Only select visible ones so search-filtering works nicely with Select All
+                $(this).closest('.field-row').find('input[type="checkbox"]:visible').prop('checked', true);
+            });
+
+            // Clear All Checkboxes
+            $(document).on('click', '.clear-properties-btn', function() {
+                $(this).closest('.field-row').find('input[type="checkbox"]').prop('checked', false);
+            });
+
+            // "Saving..." Animation
+            $('form').on('submit', function() {
+                const btn = $(this).find('#save-all-btn');
+                if(btn.length) {
+                    btn.prop('disabled', true).text('⏳ Saving...');
+                }
+            });
+        });
     </script>
 </body>
 </html>

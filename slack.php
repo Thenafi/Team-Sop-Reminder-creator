@@ -127,6 +127,7 @@ function buildReminderMessage($reminder, $sopMessage) {
     $msg .= "subsmess-" . $conversationId . "\n";
     $msg .= "---\n";
     $msg .= $sopMessage . "\n";
+    $msg .= "Tracker: 09009b39-61c9-4903-89d0-9e414b780a53\n";
     $msg .= "<!here>";
 
     return $msg;
