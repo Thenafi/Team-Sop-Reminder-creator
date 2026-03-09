@@ -125,6 +125,7 @@ if (empty($sops) || empty($activePropertyUuids)) {
         $checkOut = $res['check_out'] ?? $res['departure_date'] ?? null;
         $conversationId = $res['conversation_id'] ?? '';
         $platformId = $res['platform_id'] ?? $res['code'] ?? '';
+        $platform = $res['platform'] ?? ''; // e.g. airbnb, booking, vrbo
 
         if (!$checkIn || !$checkOut) {
             logMessage("WARNING: Reservation $reservationId missing check-in/out. Skipping.");
@@ -136,6 +137,43 @@ if (empty($sops) || empty($activePropertyUuids)) {
             $sopId = $sop['id'] ?? 'unknown_sop';
             if (!in_array($propertyId, $sop['properties'] ?? [])) {
                 continue; // This SOP doesn't apply to this property
+            }
+
+            $platformFilterMode = $sop['platform_filter_mode'] ?? 'include';
+            if ($platformFilterMode === 'exclude') {
+                if (!empty($sop['platforms'])) {
+                    $isExcluded = false;
+                    $normalizedResPlatform = strtolower(trim($platform));
+                    // If 'all' is explicitly checked in exclude mode, it excludes everything.
+                    if (in_array('all', $sop['platforms'])) {
+                        $isExcluded = true;
+                    } else {
+                        foreach ($sop['platforms'] as $sp) {
+                            if (strtolower(trim($sp)) === $normalizedResPlatform) {
+                                $isExcluded = true;
+                                break;
+                            }
+                        }
+                    }
+                    if ($isExcluded) {
+                        continue; // This SOP is excluded for this platform
+                    }
+                }
+            } else {
+                // Include mode (default)
+                if (!empty($sop['platforms']) && !in_array('all', $sop['platforms'])) {
+                    $platMatches = false;
+                    $normalizedResPlatform = strtolower(trim($platform));
+                    foreach ($sop['platforms'] as $sp) {
+                        if (strtolower(trim($sp)) === $normalizedResPlatform) {
+                            $platMatches = true;
+                            break;
+                        }
+                    }
+                    if (!$platMatches) {
+                        continue; // This SOP doesn't apply to this platform
+                    }
+                }
             }
 
             // Check if this specific (reservation, sop) tuple exists
@@ -218,7 +256,15 @@ foreach ($dueReminders as $reminder) {
     // (skip re-check in mock mode to avoid unnecessary API calls)
     if (env('API_MODE', 'live') === 'live' && $propertyId) {
         $currentStatus = checkReservationStatus($reservationId, $propertyId);
-        if ($currentStatus !== null && $currentStatus !== 'accepted') {
+        
+        if ($currentStatus === null) {
+            logMessage("API Error: Could not fetch status for reservation $reservationId. Skipping to prevent sending in error.");
+            $stmt = $db->prepare("UPDATE reminders SET status = 'failed', error_message = ? WHERE id = ?");
+            $stmt->execute(["Could not verify reservation status with API", $reminder['id']]);
+            continue;
+        }
+
+        if ($currentStatus !== 'accepted') {
             logMessage("Reservation $reservationId is no longer accepted (status: $currentStatus). Skipping.");
             $stmt = $db->prepare("UPDATE reminders SET status = 'failed', error_message = ? WHERE id = ?");
             $stmt->execute(["Reservation no longer accepted (status: $currentStatus)", $reminder['id']]);
@@ -257,7 +303,7 @@ foreach ($dueReminders as $reminder) {
 // ═══════════════════════════════════════════════════════════════
 // PHASE 3: Check for modified check-in times (edge case)
 // ═══════════════════════════════════════════════════════════════
-if (env('API_MODE', 'live') === 'live' && !empty($enabledProperties)) {
+if (env('API_MODE', 'live') === 'live' && !empty($activePropertyUuids)) {
     logMessage("Phase 3: Checking for modified check-in times...");
 
     // Get all scheduled (not yet sent) reminders
@@ -265,15 +311,16 @@ if (env('API_MODE', 'live') === 'live' && !empty($enabledProperties)) {
     $stmt->execute();
     $scheduledReminders = $stmt->fetchAll();
 
-    if (!empty($scheduledReminders)) {
-        // Re-fetch reservations to compare
-        $reservations = fetchReservations(array_keys($enabledProperties));
+    if (!empty($scheduledReminders) && !empty($allReservations)) {
+        // We already fetched $allReservations in Phase 1 for all active properties
+        // within their respective scan windows. Let's build a map for quick lookup.
         $resMap = [];
-        foreach ($reservations as $res) {
+        foreach ($allReservations as $res) {
             $resMap[$res['id']] = $res;
         }
 
         foreach ($scheduledReminders as $reminder) {
+            // Only check reservations that were returned in Phase 1's scan window
             if (isset($resMap[$reminder['reservation_id']])) {
                 $apiRes = $resMap[$reminder['reservation_id']];
                 $apiCheckIn = date('Y-m-d H:i:s', strtotime($apiRes['check_in'] ?? $apiRes['arrival_date']));
@@ -284,8 +331,16 @@ if (env('API_MODE', 'live') === 'live' && !empty($enabledProperties)) {
                         ": DB=$dbCheckIn → API=$apiCheckIn. Recalculating...");
 
                     $propertyId = $reminder['property_id'];
-                    $reminderHours = (int) ($enabledProperties[$propertyId]['reminder_hours_before'] ??
-                        env('REMINDER_HOURS_BEFORE', 12));
+                    $sopId = $reminder['sop_id'];
+                    
+                    // Find the SOP to get reminder_hours_before
+                    $reminderHours = env('REMINDER_HOURS_BEFORE', 12); // fallback
+                    foreach ($sops as $sop) {
+                        if ($sop['id'] === $sopId) {
+                            $reminderHours = (int) ($sop['reminder_hours_before'] ?? env('REMINDER_HOURS_BEFORE', 12));
+                            break;
+                        }
+                    }
 
                     $schedule = calculateRandomSendTime($apiCheckIn, $reminderHours);
                     $newScheduledAt = date('Y-m-d H:i:s', $schedule['timestamp']);
@@ -296,6 +351,8 @@ if (env('API_MODE', 'live') === 'live' && !empty($enabledProperties)) {
                 }
             }
         }
+    } else {
+        logMessage("Skipping check-in time verification: No scheduled reminders or no reservations fetched in Phase 1.");
     }
 }
 

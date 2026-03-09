@@ -21,16 +21,31 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'sync_properties') {
     try {
         $apiProperties = fetchProperties();
         $config = loadConfig();
-        if (!isset($config['properties'])) $config['properties'] = [];
+        $platforms = [];
         foreach ($apiProperties as $prop) {
             $uuid = $prop['id'];
             $config['properties'][$uuid] = [
                 'name' => $prop['name'] ?? $prop['public_name'] ?? 'Unnamed',
                 'timezone' => $prop['timezone'] ?? '-0500'
             ];
+            if (!empty($prop['listings'])) {
+                foreach ($prop['listings'] as $l) {
+                    if (!empty($l['platform'])) {
+                        $p = trim($l['platform']);
+                        $platforms[$p] = $p;
+                    }
+                }
+            }
         }
+        
+        // Retain existing platforms plus newly discovered ones
+        $existingPlatforms = $config['platforms'] ?? [];
+        $mergedPlatforms = array_unique(array_merge($existingPlatforms, array_keys($platforms)));
+        sort($mergedPlatforms);
+        $config['platforms'] = $mergedPlatforms;
+        
         saveConfig($config);
-        echo json_encode(['success' => true, 'properties' => $config['properties']]);
+        echo json_encode(['success' => true, 'properties' => $config['properties'], 'platforms' => $config['platforms']]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -65,6 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'reminder_hours_before' => (int) ($sopData['reminder_hours_before'] ?: env('REMINDER_HOURS_BEFORE', 12)),
                 'scan_days_ahead' => (int) ($sopData['scan_days_ahead'] ?: 2),
                 'properties' => $sopData['properties'] ?? [], // Array of enabled property UUIDs for this SOP
+                'platforms' => $sopData['platforms'] ?? [], // Array of enabled platforms for this SOP
+                'platform_filter_mode' => $sopData['platform_filter_mode'] ?? 'include', // include or exclude
             ];
         }
 
@@ -117,6 +134,7 @@ $config = loadConfig();
 // Ensure structure exists
 if (!isset($config['properties'])) $config['properties'] = [];
 if (!isset($config['sops'])) $config['sops'] = [];
+if (!isset($config['platforms'])) $config['platforms'] = ['airbnb', 'booking', 'vrbo', 'direct', 'manual'];
 
 // Fetch reminders from DB and check if table exists
 $reminders = [];
@@ -387,6 +405,36 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                     </div>
 
                     <div class="field-row">
+                        <label>Platform Filter Mode</label>
+                        <select name="sops[<?= $index ?>][platform_filter_mode]" style="width: 100%; padding: 6px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 3px;">
+                            <option value="include" <?= ($sop['platform_filter_mode'] ?? 'include') === 'include' ? 'selected' : '' ?>>Run ONLY for selected platforms (Include)</option>
+                            <option value="exclude" <?= ($sop['platform_filter_mode'] ?? '') === 'exclude' ? 'selected' : '' ?>>Run for ALL platforms EXCEPT selected (Exclude)</option>
+                        </select>
+                        <label>Select Platforms</label>
+                        <div class="property-checkbox-list">
+                            <?php 
+                            $availablePlatforms = $config['platforms'] ?? [];
+                            
+                            // "All Platforms" is checked by default if list empty or explicitly has 'all'
+                            $isAllChecked = empty($sop['platforms']) || in_array('all', $sop['platforms']);
+                            ?>
+                            <label class="property-checkbox-item">
+                                <input type="checkbox" name="sops[<?= $index ?>][platforms][]" value="all" <?= $isAllChecked ? 'checked' : '' ?>>
+                                <b>All Platforms</b>
+                            </label>
+                            
+                            <?php foreach ($availablePlatforms as $platKey): 
+                                $isChecked = in_array($platKey, $sop['platforms'] ?? []);
+                            ?>
+                                <label class="property-checkbox-item">
+                                    <input type="checkbox" name="sops[<?= $index ?>][platforms][]" value="<?= htmlspecialchars($platKey) ?>" <?= $isChecked ? 'checked' : '' ?>>
+                                    <?= htmlspecialchars(ucfirst($platKey)) ?>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <div class="field-row">
                         <label>Assign to Properties</label>
                         <div style="margin-bottom: 5px; display: flex; gap: 8px;">
                             <input type="text" class="property-search" placeholder="Search properties..." style="flex: 1; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 0.8rem;">
@@ -456,8 +504,9 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
     <script>
         let sopCounter = <?= count($config['sops']) ?>;
         
-        // Pass PHP property list to JS for dynamic building
+        // Pass PHP property & platform lists to JS for dynamic building
         const propertyList = <?= json_encode($config['properties']) ?>;
+        const platformList = <?= json_encode($config['platforms']) ?>;
         const defaultHours = <?= $defaultReminderHours ?>;
 
         function generateCheckboxHtml(idx, selectedUuids = []) {
@@ -468,6 +517,24 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                 <label class="property-checkbox-item">
                     <input type="checkbox" name="sops[${idx}][properties][]" value="${uuid}" ${isChecked}>
                     ${prop.name.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+                </label>`;
+            }
+            return html;
+        }
+
+        function generatePlatformCheckboxes(idx, selectedPlats = []) {
+            let html = `
+            <label class="property-checkbox-item">
+                <input type="checkbox" name="sops[${idx}][platforms][]" value="all" ${selectedPlats.length === 0 || selectedPlats.includes('all') ? 'checked' : ''}>
+                <b>All Platforms</b>
+            </label>`;
+            
+            for (const key of platformList) {
+                const isChecked = selectedPlats.includes(key) ? 'checked' : '';
+                html += `
+                <label class="property-checkbox-item">
+                    <input type="checkbox" name="sops[${idx}][platforms][]" value="${key}" ${isChecked}>
+                    ${key.charAt(0).toUpperCase() + key.slice(1)}
                 </label>`;
             }
             return html;
@@ -506,6 +573,18 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                     </div>
 
                     <div class="field-row">
+                        <label>Platform Filter Mode</label>
+                        <select name="sops[${idx}][platform_filter_mode]" style="width: 100%; padding: 6px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 3px;">
+                            <option value="include">Run ONLY for selected platforms (Include)</option>
+                            <option value="exclude">Run for ALL platforms EXCEPT selected (Exclude)</option>
+                        </select>
+                        <label>Select Platforms</label>
+                        <div class="property-checkbox-list">
+                            ${generatePlatformCheckboxes(idx)}
+                        </div>
+                    </div>
+
+                    <div class="field-row">
                         <label>Assign to Properties</label>
                         <div style="margin-bottom: 5px; display: flex; gap: 8px;">
                             <input type="text" class="property-search" placeholder="Search properties..." style="flex: 1; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 0.8rem;">
@@ -522,12 +601,48 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
             container.insertAdjacentHTML('beforeend', html);
         }
 
+        // Handle mutual exclusivity for "All Platforms" checkbox
+        $(document).on('change', '.property-checkbox-item input[type="checkbox"]', function() {
+            const $this = $(this);
+            const val = $this.val();
+            const $container = $this.closest('.property-checkbox-list');
+            
+            // Only apply this logic to the platforms checkbox list (which has an 'all' option)
+            const $allCheckbox = $container.find('input[value="all"]');
+            if ($allCheckbox.length === 0) return; // Must be the properties list, skip
+
+            if (val === 'all') {
+                if ($this.is(':checked')) {
+                    // If "All Platforms" is checked, uncheck everything else
+                    $container.find('input[type="checkbox"]').not($this).prop('checked', false);
+                }
+            } else {
+                if ($this.is(':checked')) {
+                    // If a specific platform is checked, uncheck "All Platforms"
+                    $allCheckbox.prop('checked', false);
+                } else {
+                    // If we just unchecked the last specific platform, maybe auto-check "All"?
+                    // (Optional: let's leave it empty if they uncheck it, but they can manually click All)
+                    const anyChecked = $container.find('input[type="checkbox"]:not([value="all"]):checked').length > 0;
+                    if (!anyChecked) {
+                        $allCheckbox.prop('checked', true);
+                    }
+                }
+            }
+        });
+
         $(document).ready(function() {
             // Background dynamic load of API properties
             $.get('?ajax=sync_properties', function(res) {
                 if (res.success && res.properties) {
                     Object.assign(propertyList, res.properties);
-                    console.log("Properties synced with API dynamically.");
+                    
+                    if (res.platforms) {
+                        platformList.length = 0; // clear
+                        platformList.push(...res.platforms);
+                    }
+                    
+                    console.log("Properties & platforms synced with API dynamically.");
                     
                     // Re-render toolboxes for ALL existing SOP blocks on the page
                     $('#sop-container .property-card').each(function() {
@@ -537,14 +652,22 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                         const idx = blockId.split('-').pop();
                         
                         // Discover currently checked UUIDs to retain state
-                        let selected = [];
-                        block.find('input[type="checkbox"]:checked').each(function() {
-                            selected.push($(this).val());
+                        let selectedProps = [];
+                        block.find('input[name="sops['+idx+'][properties][]"]:checked').each(function() {
+                            selectedProps.push($(this).val());
+                        });
+                        
+                        let selectedPlats = [];
+                        block.find('input[name="sops['+idx+'][platforms][]"]:checked').each(function() {
+                            selectedPlats.push($(this).val());
                         });
 
                         // Re-inject HTML
-                        const newHtml = generateCheckboxHtml(idx, selected);
-                        block.find('.property-checkbox-list').html(newHtml);
+                        const newPropHtml = generateCheckboxHtml(idx, selectedProps);
+                        block.find('.property-checkbox-list').eq(1).html(newPropHtml);
+                        
+                        const newPlatHtml = generatePlatformCheckboxes(idx, selectedPlats);
+                        block.find('.property-checkbox-list').eq(0).html(newPlatHtml);
                     });
                 }
             }).always(function() {

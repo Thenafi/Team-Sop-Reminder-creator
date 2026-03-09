@@ -103,6 +103,7 @@ function fetchProperties() {
         $result = hospitable_request('/properties', [
             'per_page' => 100,
             'page' => $page,
+            'include' => 'listings',
         ]);
 
         if (!$result || !isset($result['data'])) {
@@ -209,21 +210,21 @@ function fetchReservations($propertyUuid, $startDate, $endDate) {
  * @return string|null The current status category, or null on failure
  */
 function checkReservationStatus($reservationId, $propertyUuid) {
-    $result = hospitable_request('/reservations', [
-        'properties[]' => $propertyUuid,
-        'per_page' => 1,
-    ]);
+    if (empty($reservationId)) {
+        return null;
+    }
+
+    $result = hospitable_request('/reservations/' . urlencode($reservationId));
 
     if (!$result || !isset($result['data'])) {
         return null;
     }
 
-    // Search for our specific reservation
-    foreach ($result['data'] as $res) {
-        if ($res['id'] === $reservationId) {
-            return $res['reservation_status']['current']['category'] ?? null;
-        }
+    // Check the top-level 'status' field first (newer API format)
+    if (isset($result['data']['status'])) {
+        return $result['data']['status'];
     }
 
-    return null;
+    // Fallback to the nested 'reservation_status' object
+    return $result['data']['reservation_status']['current']['category'] ?? null;
 }
