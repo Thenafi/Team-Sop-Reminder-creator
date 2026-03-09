@@ -460,19 +460,25 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
         const propertyList = <?= json_encode($config['properties']) ?>;
         const defaultHours = <?= $defaultReminderHours ?>;
 
+        function generateCheckboxHtml(idx, selectedUuids = []) {
+            let html = '';
+            for (const [uuid, prop] of Object.entries(propertyList)) {
+                const isChecked = selectedUuids.includes(uuid) ? 'checked' : '';
+                html += `
+                <label class="property-checkbox-item">
+                    <input type="checkbox" name="sops[${idx}][properties][]" value="${uuid}" ${isChecked}>
+                    ${prop.name.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+                </label>`;
+            }
+            return html;
+        }
+
         function addSop() {
             const container = document.getElementById('sop-container');
             const idx = sopCounter++;
             const sopId = 'sop_' + Math.random().toString(36).substr(2, 9);
             
-            let checkboxesHTML = '';
-            for (const [uuid, prop] of Object.entries(propertyList)) {
-                checkboxesHTML += `
-                <label class="property-checkbox-item">
-                    <input type="checkbox" name="sops[${idx}][properties][]" value="${uuid}">
-                    ${prop.name.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
-                </label>`;
-            }
+            const checkboxesHTML = generateCheckboxHtml(idx);
 
             const html = `
                 <div class="property-card" id="sop-block-${idx}">
@@ -522,6 +528,24 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                 if (res.success && res.properties) {
                     Object.assign(propertyList, res.properties);
                     console.log("Properties synced with API dynamically.");
+                    
+                    // Re-render toolboxes for ALL existing SOP blocks on the page
+                    $('#sop-container .property-card').each(function() {
+                        const block = $(this);
+                        // Extract the ID index from the block id
+                        const blockId = block.attr('id'); // e.g. sop-block-0
+                        const idx = blockId.split('-').pop();
+                        
+                        // Discover currently checked UUIDs to retain state
+                        let selected = [];
+                        block.find('input[type="checkbox"]:checked').each(function() {
+                            selected.push($(this).val());
+                        });
+
+                        // Re-inject HTML
+                        const newHtml = generateCheckboxHtml(idx, selected);
+                        block.find('.property-checkbox-list').html(newHtml);
+                    });
                 }
             }).always(function() {
                 // Hide the loading banner regardless of success or failure
