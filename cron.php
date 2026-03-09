@@ -29,28 +29,34 @@ logMessage("Phase 1: Discovering new reservations...");
 $enabledProperties = [];
 $sops = $config['sops'] ?? [];
 
-// Build a unique master list of ALL properties referenced in ANY SOP
-$activePropertyUuids = [];
+// Build a unique master list of ALL properties referenced in ANY SOP, tracking the MAX scan days needed for each
+$propertyScanDays = [];
 foreach ($sops as $sop) {
+    $sopScanDays = (int) ($sop['scan_days_ahead'] ?? 2);
     if (!empty($sop['properties']) && is_array($sop['properties'])) {
         foreach ($sop['properties'] as $pid) {
-            $activePropertyUuids[$pid] = true;
+            if (!isset($propertyScanDays[$pid])) {
+                $propertyScanDays[$pid] = $sopScanDays;
+            } else {
+                $propertyScanDays[$pid] = max($propertyScanDays[$pid], $sopScanDays);
+            }
         }
     }
 }
-$activePropertyUuids = array_keys($activePropertyUuids);
+$activePropertyUuids = array_keys($propertyScanDays);
 
 if (empty($sops) || empty($activePropertyUuids)) {
     logMessage("No active SOPs or assigned properties found in config. Skipping Phase 1.");
 } else {
     logMessage("Active SOPs: " . count($sops) . " | Unique Properties to Scan: " . count($activePropertyUuids));
 
-    $scanDaysAhead = (int) ($config['global']['scan_days_ahead'] ?? 2);
     $allReservations = [];
 
     // Fetch accepted reservations for each unique active property
     foreach ($activePropertyUuids as $uuid) {
         $prop = $config['properties'][$uuid] ?? [];
+        $scanDaysAhead = $propertyScanDays[$uuid];
+        
         // Build timezone-aware start and end dates
         $tz = $prop['timezone'] ?? '-0500';
         try {

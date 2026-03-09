@@ -50,12 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'save_config') {
         $config = loadConfig();
         $postedSops = $_POST['sops'] ?? [];
-        $scanDaysAhead = (int) ($_POST['scan_days_ahead'] ?? 2);
-
-        // Update global settings
-        $config['global'] = [
-            'scan_days_ahead' => $scanDaysAhead,
-        ];
 
         // Ensure sops array exists
         $config['sops'] = [];
@@ -69,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'name' => trim($sopData['name'] ?? 'Unnamed SOP'),
                 'sop_message' => trim($sopData['sop_message'] ?? ''),
                 'reminder_hours_before' => (int) ($sopData['reminder_hours_before'] ?: env('REMINDER_HOURS_BEFORE', 12)),
+                'scan_days_ahead' => (int) ($sopData['scan_days_ahead'] ?: 2),
                 'properties' => $sopData['properties'] ?? [], // Array of enabled property UUIDs for this SOP
             ];
         }
@@ -123,12 +118,17 @@ $config = loadConfig();
 if (!isset($config['properties'])) $config['properties'] = [];
 if (!isset($config['sops'])) $config['sops'] = [];
 
-// Fetch reminders from DB
+// Fetch reminders from DB and check if table exists
 $reminders = [];
+$dbExists = false;
 try {
     $db = getDB();
-    $stmt = $db->query("SELECT * FROM reminders ORDER BY scheduled_at DESC LIMIT 50");
-    $reminders = $stmt->fetchAll();
+    $stmt = $db->query("SELECT 1 FROM reminders LIMIT 1");
+    if ($stmt !== false) {
+        $dbExists = true;
+        $stmt = $db->query("SELECT * FROM reminders ORDER BY scheduled_at DESC LIMIT 50");
+        $reminders = $stmt->fetchAll();
+    }
 } catch (Exception $e) {
     // DB might not be set up yet
 }
@@ -161,6 +161,35 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
         .msg { padding: 10px 14px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9rem; }
         .msg.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .msg.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* Loading Spinner */
+        #api-loading-banner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #856404;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
         /* Property cards */
         .property-card {
@@ -296,7 +325,13 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
         The system handles scheduling guests for all their associated SOPs.
     </div>
 
+    <div id="api-loading-banner">
+        <span class="spinner"></span>
+        Fetching latest properties from Hospitable API...
+    </div>
+
     <!-- ═══ DB Setup Button ═══ -->
+    <?php if (!$dbExists): ?>
     <form method="POST" style="margin-bottom: 15px;">
         <input type="hidden" name="action" value="run_db_setup">
         <button type="submit" class="btn btn-secondary btn-sm"
@@ -304,25 +339,11 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
             ⚙️ Setup Database
         </button>
     </form>
+    <?php endif; ?>
 
-    <!-- ═══ Global Settings ═══ -->
+    <!-- ═══ SOP Builder ═══ -->
     <form method="POST">
         <input type="hidden" name="action" value="save_config">
-        
-        <h2>Global Settings</h2>
-        <div class="property-card">
-            <div class="field-row">
-                <label>Scan Days Ahead</label>
-                <div style="font-size:0.8rem; color:#666; margin-bottom:5px;">
-                    How far in the future should we look for accepted reservations? (Default: 2)
-                </div>
-                <input type="number" name="scan_days_ahead" 
-                       value="<?= htmlspecialchars($config['global']['scan_days_ahead'] ?? 2) ?>" 
-                       min="1" max="30">
-            </div>
-        </div>
-
-        <!-- ═══ SOP Builder ═══ -->
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <h2>Your SOPs (<?= count($config['sops']) ?>)</h2>
             <button type="button" class="btn btn-secondary btn-sm" onclick="addSop()">+ Add New SOP</button>
@@ -355,6 +376,14 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                                name="sops[<?= $index ?>][reminder_hours_before]"
                                value="<?= htmlspecialchars($sop['reminder_hours_before'] ?? $defaultReminderHours) ?>"
                                min="1" max="168">
+                    </div>
+
+                    <div class="field-row">
+                        <label>Scan Days Ahead (Window)</label>
+                        <input type="number"
+                               name="sops[<?= $index ?>][scan_days_ahead]"
+                               value="<?= htmlspecialchars($sop['scan_days_ahead'] ?? 2) ?>"
+                               min="1" max="30">
                     </div>
 
                     <div class="field-row">
@@ -466,6 +495,11 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                     </div>
 
                     <div class="field-row">
+                        <label>Scan Days Ahead (Window)</label>
+                        <input type="number" name="sops[${idx}][scan_days_ahead]" value="2" min="1" max="30">
+                    </div>
+
+                    <div class="field-row">
                         <label>Assign to Properties</label>
                         <div style="margin-bottom: 5px; display: flex; gap: 8px;">
                             <input type="text" class="property-search" placeholder="Search properties..." style="flex: 1; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 0.8rem;">
@@ -489,6 +523,9 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                     Object.assign(propertyList, res.properties);
                     console.log("Properties synced with API dynamically.");
                 }
+            }).always(function() {
+                // Hide the loading banner regardless of success or failure
+                $('#api-loading-banner').fadeOut();
             });
 
             // Property Search Support
