@@ -113,4 +113,9 @@ function requireAuth() {
 function logMessage($message) {
     $timestamp = date('Y-m-d H:i:s');
     echo "[$timestamp] $message\n";
+    // If running in browser, flush so user sees output in real time
+    if (php_sapi_name() !== 'cli') {
+        @ob_flush();
+        @flush();
+    }
 }

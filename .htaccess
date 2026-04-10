@@ -8,7 +8,7 @@ Options -Indexes
 </FilesMatch>
 
 # Protect backend scripts from direct browser access
-<FilesMatch "^(cron|db_setup|mock_api|config|hospitable_api|slack|shift_scheduler)\.php$">
+<FilesMatch "^(db_setup|mock_api|config|hospitable_api|slack|shift_scheduler)\.php$">
     Order Allow,Deny
     Deny from all
 </FilesMatch>

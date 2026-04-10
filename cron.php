@@ -15,6 +15,14 @@ require_once __DIR__ . '/hospitable_api.php';
 require_once __DIR__ . '/shift_scheduler.php';
 require_once __DIR__ . '/slack.php';
 
+if (php_sapi_name() !== 'cli') {
+    // If running via a browser, ensure it doesn't time out or stop if the tab is closed
+    set_time_limit(0);
+    ignore_user_abort(true);
+    // Format the output clearly
+    echo "<pre>\n";
+}
+
 logMessage("=== CRON START ===");
 
 $db = getDB();
@@ -89,6 +97,7 @@ if (empty($sops) || empty($activePropertyUuids)) {
     }
 
     $newCount = 0;
+    $reservationSyncLog = [];
     
     // Process every reservation against every applicable SOP
     foreach ($allReservations as $res) {
@@ -104,6 +113,10 @@ if (empty($sops) || empty($activePropertyUuids)) {
 
         if (!$propertyId) {
             logMessage("WARNING: Reservation $reservationId missing property ID. Skipping.");
+            $reservationSyncLog[$reservationId] = [
+                'guest' => 'Unknown', 'property' => 'Unknown', 'platform' => 'Unknown', 'check_in' => 'Unknown',
+                'sops' => ['ALL' => 'Skipped (Missing property ID)']
+            ];
             continue;
         }
 
@@ -129,13 +142,28 @@ if (empty($sops) || empty($activePropertyUuids)) {
 
         if (!$checkIn || !$checkOut) {
             logMessage("WARNING: Reservation $reservationId missing check-in/out. Skipping.");
+            $reservationSyncLog[$reservationId] = [
+                'guest' => $guestName, 'property' => $propertyName, 'platform' => $platform, 'check_in' => 'Unknown',
+                'sops' => ['ALL' => 'Skipped (Missing check-in/out)']
+            ];
             continue;
+        }
+
+        if (!isset($reservationSyncLog[$reservationId])) {
+            $reservationSyncLog[$reservationId] = [
+                'guest' => $guestName,
+                'property' => $propertyName,
+                'check_in' => $checkIn,
+                'platform' => $platform,
+                'sops' => []
+            ];
         }
 
         // Find all SOPs assigned to this property
         foreach ($sops as $sop) {
             $sopId = $sop['id'] ?? 'unknown_sop';
             if (!in_array($propertyId, $sop['properties'] ?? [])) {
+                $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] = "Skipped (Property not assigned)";
                 continue; // This SOP doesn't apply to this property
             }
 
@@ -156,6 +184,7 @@ if (empty($sops) || empty($activePropertyUuids)) {
                         }
                     }
                     if ($isExcluded) {
+                        $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] = "Skipped (Platform excluded)";
                         continue; // This SOP is excluded for this platform
                     }
                 }
@@ -171,6 +200,7 @@ if (empty($sops) || empty($activePropertyUuids)) {
                         }
                     }
                     if (!$platMatches) {
+                        $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] = "Skipped (Platform not included)";
                         continue; // This SOP doesn't apply to this platform
                     }
                 }
@@ -180,6 +210,7 @@ if (empty($sops) || empty($activePropertyUuids)) {
             $stmt = $db->prepare("SELECT id FROM reminders WHERE reservation_id = ? AND sop_id = ?");
             $stmt->execute([$reservationId, $sopId]);
             if ($stmt->fetch()) {
+                $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] = "Skipped (Already scheduled)";
                 continue; // Already scheduled
             }
             
@@ -223,17 +254,49 @@ if (empty($sops) || empty($activePropertyUuids)) {
                 } else {
                     logMessage("→ Scheduled for $scheduledAt: $guestName at $propertyName (SOP: {$sop['name']})");
                 }
+                $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] = "Scheduled for $scheduledAt";
             } catch (PDOException $e) {
                 if ($e->getCode() == 23000) {
                     logMessage("Reservation $reservationId ($sopId) already exists in DB (race condition). Skipping.");
+                    $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] = "Skipped (Already in DB race condition)";
                 } else {
                     logMessage("ERROR: Could not insert reservation $reservationId ($sopId): " . $e->getMessage());
+                    $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] = "ERROR: " . $e->getMessage();
                 }
             }
         }
     }
 
     logMessage("Phase 1 complete. $newCount new reminders scheduled.");
+
+    // Write daily sync log
+    $logDir = __DIR__ . '/logs';
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0755, true);
+    }
+    $dailyLogFile = $logDir . '/pulled_reservations_' . date('Y-m-d') . '.log';
+    $logOutput = "=== RUN: " . date('Y-m-d H:i:s') . " (Found " . count($allReservations) . " total reservations) ===\n";
+    foreach ($reservationSyncLog as $id => $data) {
+        $logOutput .= "Res ID: {$id} | Guest: {$data['guest']} | Prop: {$data['property']} | Platform: {$data['platform']} | Check-in: {$data['check_in']}\n";
+        if (empty($data['sops'])) {
+             $logOutput .= "  -> (No matching SOPs evaluated)\n";
+        } else {
+            foreach ($data['sops'] as $sName => $outcome) {
+                $logOutput .= "  -> SOP: {$sName} => {$outcome}\n";
+            }
+        }
+    }
+    $logOutput .= "\n";
+    file_put_contents($dailyLogFile, $logOutput, FILE_APPEND);
+    
+    // Cleanup old logs (> 7 days)
+    $files = glob($logDir . '/pulled_reservations_*.log');
+    $now = time();
+    foreach ($files as $file) {
+        if (is_file($file) && ($now - filemtime($file) > 7 * 24 * 3600)) {
+            @unlink($file);
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
