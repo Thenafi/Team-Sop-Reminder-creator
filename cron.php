@@ -223,8 +223,10 @@ if (empty($sops) || empty($activePropertyUuids)) {
 
             // Convert scheduled timestamp to MySQL datetime
             $scheduledAt = date('Y-m-d H:i:s', $schedule['timestamp']);
-            $checkInFormatted = date('Y-m-d H:i:s', strtotime($checkIn));
-            $checkOutFormatted = date('Y-m-d H:i:s', strtotime($checkOut));
+            // Store check-in/out as plain dates (no time) to avoid timezone-shifted midnight
+            // rolling the date over by a day. The API returns date-only strings — treat them as such.
+            $checkInFormatted = date('Y-m-d', strtotime($checkIn . ' noon UTC'));
+            $checkOutFormatted = date('Y-m-d', strtotime($checkOut . ' noon UTC'));
 
             // Insert into DB
             try {
@@ -343,8 +345,8 @@ if (env('API_MODE', 'live') === 'live') {
                     continue;
                 }
 
-                $apiCheckIn = date('Y-m-d H:i:s', strtotime($apiRes['check_in'] ?? $apiRes['arrival_date']));
-                $dbCheckIn = $reminder['check_in'];
+                $apiCheckIn = date('Y-m-d', strtotime(($apiRes['check_in'] ?? $apiRes['arrival_date']) . ' noon UTC'));
+                $dbCheckIn = date('Y-m-d', strtotime($reminder['check_in'] . ' noon UTC'));
 
                 if ($apiCheckIn !== $dbCheckIn) {
                     logMessage("Check-in changed for reservation $resId: DB=$dbCheckIn → API=$apiCheckIn. Recalculating...");
@@ -362,7 +364,7 @@ if (env('API_MODE', 'live') === 'live') {
                     $newScheduledAt = date('Y-m-d H:i:s', $schedule['timestamp']);
 
                     $stmt = $db->prepare("UPDATE reminders SET check_in = ?, scheduled_at = ? WHERE id = ?");
-                    $stmt->execute([$apiCheckIn, $newScheduledAt, $reminder['id']]);
+                    $stmt->execute([date('Y-m-d', strtotime($apiCheckIn . ' noon UTC')), $newScheduledAt, $reminder['id']]);
                     logMessage("→ Rescheduled to $newScheduledAt");
                 }
             }

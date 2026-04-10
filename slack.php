@@ -114,8 +114,10 @@ function buildReminderMessage($reminder, $sopMessage) {
     $threadLink = 'https://my.hospitable.com/inbox/thread/' . $reminder['conversation_id'];
     $shortLink = shortenUrl($threadLink);
 
-    $checkIn = date('D, M j, Y', strtotime($reminder['check_in']));
-    $checkOut = date('D, M j, Y', strtotime($reminder['check_out']));
+    // Dates from DB are stored as plain Y-m-d; parse with noon UTC to prevent
+    // timezone-shifted midnight from rolling the display date over by one day.
+    $checkIn = date('D, M j, Y', strtotime(substr($reminder['check_in'], 0, 10) . ' noon UTC'));
+    $checkOut = date('D, M j, Y', strtotime(substr($reminder['check_out'], 0, 10) . ' noon UTC'));
 
     $platformId = $reminder['platform_id'] ?? '';
     $conversationId = $reminder['conversation_id'] ?? '';
@@ -145,7 +147,7 @@ function sendFailureAlert($reminder, $error) {
     $msg = ":warning: *SOP Reminder FAILED*\n";
     $msg .= ":house: Property: " . $reminder['property_name'] . "\n";
     $msg .= ":bust_in_silhouette: Guest: " . $reminder['guest_name'] . "\n";
-    $msg .= ":calendar: Check-in: " . date('M j, Y g:i A', strtotime($reminder['check_in'])) . "\n";
+    $msg .= ":calendar: Check-in: " . date('M j, Y', strtotime(substr($reminder['check_in'], 0, 10) . ' noon UTC')) . "\n";
     $msg .= ":x: Error: " . $error . "\n";
     $msg .= "<@" . $failureUserId . ">";
 
