@@ -231,7 +231,8 @@ if (empty($sops) || empty($activePropertyUuids)) {
                     'debug' => 'Send Immediately mode enabled. Scheduling for now.',
                 ];
             } else {
-                $schedule = calculateRandomSendTime($checkIn, $reminderHours);
+                // Pass the RAW check-in string so the scheduler knows the exact time and timezone!
+                $schedule = calculateRandomSendTime($checkInRaw, $reminderHours);
             }
             logMessage("Reservation $reservationId ($sopId): " . $schedule['debug']);
 
@@ -376,7 +377,8 @@ if (env('API_MODE', 'live') === 'live') {
                         }
                     }
 
-                    $schedule = calculateRandomSendTime($apiCheckIn, $reminderHours);
+                    // Pass the RAW API check-in to the scheduler for exact calculation
+                    $schedule = calculateRandomSendTime($apiCheckInRaw, $reminderHours);
                     $newScheduledAt = date('Y-m-d H:i:s', $schedule['timestamp']);
 
                     $stmt = $db->prepare("UPDATE reminders SET check_in = ?, scheduled_at = ? WHERE id = ?");
