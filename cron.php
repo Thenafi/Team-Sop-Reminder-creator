@@ -40,7 +40,8 @@ $sops = $config['sops'] ?? [];
 // Build a unique master list of ALL properties referenced in ANY SOP, tracking the MAX scan days needed for each
 $propertyScanDays = [];
 foreach ($sops as $sop) {
-    $sopScanDays = (int) ($sop['scan_days_ahead'] ?? 2);
+    // Immediate-mode SOPs need to scan far ahead to catch all new bookings
+    $sopScanDays = !empty($sop['send_immediately']) ? 365 : (int) ($sop['scan_days_ahead'] ?? 2);
     if (!empty($sop['properties']) && is_array($sop['properties'])) {
         foreach ($sop['properties'] as $pid) {
             if (!isset($propertyScanDays[$pid])) {
@@ -134,8 +135,12 @@ if (empty($sops) || empty($activePropertyUuids)) {
         }
 
         // Extract dates and IDs
-        $checkIn = $res['check_in'] ?? $res['arrival_date'] ?? null;
-        $checkOut = $res['check_out'] ?? $res['departure_date'] ?? null;
+        // Always take the first 10 chars (YYYY-MM-DD) — the API may return full ISO
+        // datetime strings whose UTC representation crosses midnight and shifts the date.
+        $checkInRaw  = $res['check_in']  ?? $res['arrival_date']   ?? null;
+        $checkOutRaw = $res['check_out'] ?? $res['departure_date'] ?? null;
+        $checkIn  = $checkInRaw  ? substr($checkInRaw,  0, 10) : null;
+        $checkOut = $checkOutRaw ? substr($checkOutRaw, 0, 10) : null;
         $conversationId = $res['conversation_id'] ?? '';
         $platformId = $res['platform_id'] ?? $res['code'] ?? '';
         $platform = $res['platform'] ?? ''; // e.g. airbnb, booking, vrbo
@@ -214,19 +219,28 @@ if (empty($sops) || empty($activePropertyUuids)) {
                 continue; // Already scheduled
             }
             
+            $sendImmediately = !empty($sop['send_immediately']);
             $reminderHours = (int) ($sop['reminder_hours_before'] ?? env('REMINDER_HOURS_BEFORE', 12));
             $sopMessage = $sop['sop_message'] ?? 'No SOP message defined.';
 
-            // Calculate random send time
-            $schedule = calculateRandomSendTime($checkIn, $reminderHours);
+            // Calculate send time — immediate mode bypasses the shift scheduler entirely
+            if ($sendImmediately) {
+                $schedule = [
+                    'timestamp' => time(),
+                    'immediate' => true,
+                    'debug' => 'Send Immediately mode enabled. Scheduling for now.',
+                ];
+            } else {
+                $schedule = calculateRandomSendTime($checkIn, $reminderHours);
+            }
             logMessage("Reservation $reservationId ($sopId): " . $schedule['debug']);
 
             // Convert scheduled timestamp to MySQL datetime
             $scheduledAt = date('Y-m-d H:i:s', $schedule['timestamp']);
-            // Store check-in/out as plain dates (no time) to avoid timezone-shifted midnight
-            // rolling the date over by a day. The API returns date-only strings — treat them as such.
-            $checkInFormatted = date('Y-m-d', strtotime($checkIn . ' noon UTC'));
-            $checkOutFormatted = date('Y-m-d', strtotime($checkOut . ' noon UTC'));
+            // $checkIn/$checkOut are already plain YYYY-MM-DD strings (sliced above).
+            // Store them directly — no strtotime needed, no timezone shift risk.
+            $checkInFormatted  = $checkIn;
+            $checkOutFormatted = $checkOut;
 
             // Insert into DB
             try {
@@ -345,8 +359,10 @@ if (env('API_MODE', 'live') === 'live') {
                     continue;
                 }
 
-                $apiCheckIn = date('Y-m-d', strtotime(($apiRes['check_in'] ?? $apiRes['arrival_date']) . ' noon UTC'));
-                $dbCheckIn = date('Y-m-d', strtotime($reminder['check_in'] . ' noon UTC'));
+                // Slice to YYYY-MM-DD — same reason as Phase 1; avoid UTC midnight shift.
+                $apiCheckInRaw = $apiRes['check_in'] ?? $apiRes['arrival_date'] ?? '';
+                $apiCheckIn    = substr($apiCheckInRaw, 0, 10);
+                $dbCheckIn     = substr($reminder['check_in'], 0, 10);
 
                 if ($apiCheckIn !== $dbCheckIn) {
                     logMessage("Check-in changed for reservation $resId: DB=$dbCheckIn → API=$apiCheckIn. Recalculating...");
@@ -364,7 +380,8 @@ if (env('API_MODE', 'live') === 'live') {
                     $newScheduledAt = date('Y-m-d H:i:s', $schedule['timestamp']);
 
                     $stmt = $db->prepare("UPDATE reminders SET check_in = ?, scheduled_at = ? WHERE id = ?");
-                    $stmt->execute([date('Y-m-d', strtotime($apiCheckIn . ' noon UTC')), $newScheduledAt, $reminder['id']]);
+                    // $apiCheckIn is already a plain YYYY-MM-DD string — store directly.
+                    $stmt->execute([$apiCheckIn, $newScheduledAt, $reminder['id']]);
                     logMessage("→ Rescheduled to $newScheduledAt");
                 }
             }
