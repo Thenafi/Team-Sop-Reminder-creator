@@ -88,6 +88,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            // ── Conditions ──
+            $leadTimeOp    = $sopData['lead_time_operator']       ?? 'any';
+            $leadTimeVal   = (int) ($sopData['lead_time_value']   ?? 0);
+            $nightsOp      = $sopData['nights_operator']          ?? 'any';
+            $nightsVal     = (int) ($sopData['nights_value']      ?? 0);
+            $daysToInOp    = $sopData['days_to_checkin_operator']  ?? 'any';
+            $daysToInVal   = (int) ($sopData['days_to_checkin_value']  ?? 0);
+            $daysToOutOp   = $sopData['days_to_checkout_operator'] ?? 'any';
+            $daysToOutVal  = (int) ($sopData['days_to_checkout_value'] ?? 0);
+
             $config['sops'][] = [
                 'id' => $sopId,
                 'name' => trim($sopData['name'] ?? 'Unnamed SOP'),
@@ -98,6 +108,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'properties' => $sopData['properties'] ?? [], // Array of enabled property UUIDs for this SOP
                 'platforms' => $sopData['platforms'] ?? [], // Array of enabled platforms for this SOP
                 'platform_filter_mode' => $sopData['platform_filter_mode'] ?? 'include', // include or exclude
+                // Conditional rules
+                'lead_time_operator'       => $leadTimeOp,    // any | lt | lte | eq | gte | gt
+                'lead_time_value'          => $leadTimeVal,   // days between booking_date and check_in
+                'nights_operator'          => $nightsOp,      // any | lt | lte | eq | gte | gt
+                'nights_value'             => $nightsVal,     // reservation nights count
+                'days_to_checkin_operator' => $daysToInOp,   // any | lt | lte | eq | gte | gt
+                'days_to_checkin_value'    => $daysToInVal,  // days from NOW to check_in
+                'days_to_checkout_operator'=> $daysToOutOp,  // any | lt | lte | eq | gte | gt
+                'days_to_checkout_value'   => $daysToOutVal, // days from NOW to check_out
             ];
         }
 
@@ -620,6 +639,60 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
             pointer-events: none;
         }
 
+        /* ─── Condition rows ──────────────────── */
+        .condition-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+        }
+        .condition-row:last-child { margin-bottom: 0; }
+        .condition-row .cond-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            min-width: 120px;
+            flex-shrink: 0;
+        }
+        .condition-row select {
+            flex: 1;
+            width: auto;
+            min-width: 170px;
+            font-size: 0.8rem;
+            padding: 6px 10px;
+        }
+        .condition-row input[type="number"] {
+            width: 80px;
+            font-size: 0.8rem;
+            padding: 6px 10px;
+        }
+        .condition-value-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .condition-value-wrap .unit-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            white-space: nowrap;
+        }
+        .cond-value-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .scan-hint {
+            width: 100%;
+            margin-top: 5px;
+            padding: 0 2px;
+            display: none;
+            line-height: 1.4;
+        }
+
         /* ─── Save bar ────────────────────────── */
         .save-bar {
             margin-top: 24px;
@@ -873,6 +946,93 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                                 </div>
                             </div>
                         </div>
+
+                        <!-- ── Conditions ── -->
+                        <?php
+                            $ltOp   = $sop['lead_time_operator']        ?? 'any';
+                            $ltVal  = $sop['lead_time_value']           ?? 1;
+                            $nOp    = $sop['nights_operator']           ?? 'any';
+                            $nVal   = $sop['nights_value']              ?? 1;
+                            $diOp   = $sop['days_to_checkin_operator']  ?? 'any';
+                            $diVal  = $sop['days_to_checkin_value']     ?? 1;
+                            $doOp   = $sop['days_to_checkout_operator'] ?? 'any';
+                            $doVal  = $sop['days_to_checkout_value']    ?? 1;
+                            $ltHidden = ($ltOp === 'any') ? 'style="display:none;"' : '';
+                            $nHidden  = ($nOp  === 'any') ? 'style="display:none;"' : '';
+                            $diHidden = ($diOp === 'any') ? 'style="display:none;"' : '';
+                            $doHidden = ($doOp === 'any') ? 'style="display:none;"' : '';
+                        ?>
+                        <div class="field-group">
+                            <div class="field-group-title">Conditions <span style="font-size:0.65rem;font-weight:400;color:var(--text-dim);margin-left:6px;">(SOP only fires when ALL conditions match)</span></div>
+
+                            <!-- Lead-time condition -->
+                            <div class="condition-row">
+                                <span class="cond-label">📅 Booking Lead-time</span>
+                                <select name="sops[<?= $index ?>][lead_time_operator]" class="cond-operator" data-target="lt-val-<?= $index ?>">
+                                    <option value="any"  <?= $ltOp==='any'  ? 'selected':'' ?>>Any lead-time</option>
+                                    <option value="lt"   <?= $ltOp==='lt'   ? 'selected':'' ?>>Less than N days (booking→check-in)</option>
+                                    <option value="lte"  <?= $ltOp==='lte'  ? 'selected':'' ?>>≤ N days (booking→check-in)</option>
+                                    <option value="eq"   <?= $ltOp==='eq'   ? 'selected':'' ?>>Exactly N days (booking→check-in)</option>
+                                    <option value="gte"  <?= $ltOp==='gte'  ? 'selected':'' ?>>≥ N days (booking→check-in)</option>
+                                    <option value="gt"   <?= $ltOp==='gt'   ? 'selected':'' ?>>More than N days (booking→check-in)</option>
+                                </select>
+                                <div class="cond-value-group" id="lt-val-<?= $index ?>" <?= $ltHidden ?>>
+                                    <input type="number" name="sops[<?= $index ?>][lead_time_value]" value="<?= (int)$ltVal ?>" min="0" max="999">
+                                    <span class="unit-label">days</span>
+                                </div>
+                            </div>
+
+                            <!-- Nights condition -->
+                            <div class="condition-row">
+                                <span class="cond-label">🌙 Stay Length</span>
+                                <select name="sops[<?= $index ?>][nights_operator]" class="cond-operator" data-target="n-val-<?= $index ?>">
+                                    <option value="any"  <?= $nOp==='any'  ? 'selected':'' ?>>Any number of nights</option>
+                                    <option value="lt"   <?= $nOp==='lt'   ? 'selected':'' ?>>Less than N nights</option>
+                                    <option value="lte"  <?= $nOp==='lte'  ? 'selected':'' ?>>≤ N nights</option>
+                                    <option value="eq"   <?= $nOp==='eq'   ? 'selected':'' ?>>Exactly N nights</option>
+                                    <option value="gte"  <?= $nOp==='gte'  ? 'selected':'' ?>>≥ N nights</option>
+                                    <option value="gt"   <?= $nOp==='gt'   ? 'selected':'' ?>>More than N nights</option>
+                                </select>
+                                <div class="cond-value-group" id="n-val-<?= $index ?>" <?= $nHidden ?>>
+                                    <input type="number" name="sops[<?= $index ?>][nights_value]" value="<?= (int)$nVal ?>" min="1" max="999">
+                                    <span class="unit-label">nights</span>
+                                </div>
+                            </div>
+
+                            <!-- Days until check-in condition -->
+                            <div class="condition-row">
+                                <span class="cond-label">🚪 Days to Check-in</span>
+                                <select name="sops[<?= $index ?>][days_to_checkin_operator]" class="cond-operator" data-target="di-val-<?= $index ?>">
+                                    <option value="any"  <?= $diOp==='any'  ? 'selected':'' ?>>Any time until check-in</option>
+                                    <option value="lt"   <?= $diOp==='lt'   ? 'selected':'' ?>>Less than N days until check-in</option>
+                                    <option value="lte"  <?= $diOp==='lte'  ? 'selected':'' ?>>≤ N days until check-in</option>
+                                    <option value="eq"   <?= $diOp==='eq'   ? 'selected':'' ?>>Exactly N days until check-in</option>
+                                    <option value="gte"  <?= $diOp==='gte'  ? 'selected':'' ?>>≥ N days until check-in</option>
+                                    <option value="gt"   <?= $diOp==='gt'   ? 'selected':'' ?>>More than N days until check-in</option>
+                                </select>
+                                <div class="cond-value-group" id="di-val-<?= $index ?>" <?= $diHidden ?>>
+                                    <input type="number" name="sops[<?= $index ?>][days_to_checkin_value]" value="<?= (int)$diVal ?>" min="0" max="999">
+                                    <span class="unit-label">days</span>
+                                </div>
+                            </div>
+
+                            <!-- Days until check-out condition -->
+                            <div class="condition-row">
+                                <span class="cond-label">🏁 Days to Check-out</span>
+                                <select name="sops[<?= $index ?>][days_to_checkout_operator]" class="cond-operator" data-target="do-val-<?= $index ?>">
+                                    <option value="any"  <?= $doOp==='any'  ? 'selected':'' ?>>Any time until check-out</option>
+                                    <option value="lt"   <?= $doOp==='lt'   ? 'selected':'' ?>>Less than N days until check-out</option>
+                                    <option value="lte"  <?= $doOp==='lte'  ? 'selected':'' ?>>≤ N days until check-out</option>
+                                    <option value="eq"   <?= $doOp==='eq'   ? 'selected':'' ?>>Exactly N days until check-out</option>
+                                    <option value="gte"  <?= $doOp==='gte'  ? 'selected':'' ?>>≥ N days until check-out</option>
+                                    <option value="gt"   <?= $doOp==='gt'   ? 'selected':'' ?>>More than N days until check-out</option>
+                                </select>
+                                <div class="cond-value-group" id="do-val-<?= $index ?>" <?= $doHidden ?>>
+                                    <input type="number" name="sops[<?= $index ?>][days_to_checkout_value]" value="<?= (int)$doVal ?>" min="0" max="999">
+                                    <span class="unit-label">days</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -1101,12 +1261,92 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                                 </div>
                             </div>
                         </div>
+
+                        <div class="field-group">
+                            <div class="field-group-title">Conditions <span style="font-size:0.65rem;font-weight:400;color:var(--text-dim);margin-left:6px;">(SOP only fires when ALL conditions match)</span></div>
+
+                            <div class="condition-row">
+                                <span class="cond-label">📅 Booking Lead-time</span>
+                                <select name="sops[${idx}][lead_time_operator]" class="cond-operator" data-target="lt-val-${idx}">
+                                    <option value="any">Any lead-time</option>
+                                    <option value="lt">Less than N days (booking→check-in)</option>
+                                    <option value="lte">≤ N days (booking→check-in)</option>
+                                    <option value="eq">Exactly N days (booking→check-in)</option>
+                                    <option value="gte">≥ N days (booking→check-in)</option>
+                                    <option value="gt">More than N days (booking→check-in)</option>
+                                </select>
+                                <div class="cond-value-group" id="lt-val-${idx}" style="display:none;">
+                                    <input type="number" name="sops[${idx}][lead_time_value]" value="1" min="0" max="999">
+                                    <span class="unit-label">days</span>
+                                </div>
+                            </div>
+
+                            <div class="condition-row">
+                                <span class="cond-label">🌙 Stay Length</span>
+                                <select name="sops[${idx}][nights_operator]" class="cond-operator" data-target="n-val-${idx}">
+                                    <option value="any">Any number of nights</option>
+                                    <option value="lt">Less than N nights</option>
+                                    <option value="lte">≤ N nights</option>
+                                    <option value="eq">Exactly N nights</option>
+                                    <option value="gte">≥ N nights</option>
+                                    <option value="gt">More than N nights</option>
+                                </select>
+                                <div class="cond-value-group" id="n-val-${idx}" style="display:none;">
+                                    <input type="number" name="sops[${idx}][nights_value]" value="1" min="1" max="999">
+                                    <span class="unit-label">nights</span>
+                                </div>
+                            </div>
+
+                            <div class="condition-row">
+                                <span class="cond-label">🚪 Days to Check-in</span>
+                                <select name="sops[${idx}][days_to_checkin_operator]" class="cond-operator" data-target="di-val-${idx}">
+                                    <option value="any">Any time until check-in</option>
+                                    <option value="lt">Less than N days until check-in</option>
+                                    <option value="lte">≤ N days until check-in</option>
+                                    <option value="eq">Exactly N days until check-in</option>
+                                    <option value="gte">≥ N days until check-in</option>
+                                    <option value="gt">More than N days until check-in</option>
+                                </select>
+                                <div class="cond-value-group" id="di-val-${idx}" style="display:none;">
+                                    <input type="number" name="sops[${idx}][days_to_checkin_value]" value="1" min="0" max="999">
+                                    <span class="unit-label">days</span>
+                                </div>
+                            </div>
+
+                            <div class="condition-row">
+                                <span class="cond-label">🏁 Days to Check-out</span>
+                                <select name="sops[${idx}][days_to_checkout_operator]" class="cond-operator" data-target="do-val-${idx}">
+                                    <option value="any">Any time until check-out</option>
+                                    <option value="lt">Less than N days until check-out</option>
+                                    <option value="lte">≤ N days until check-out</option>
+                                    <option value="eq">Exactly N days until check-out</option>
+                                    <option value="gte">≥ N days until check-out</option>
+                                    <option value="gt">More than N days until check-out</option>
+                                </select>
+                                <div class="cond-value-group" id="do-val-${idx}" style="display:none;">
+                                    <input type="number" name="sops[${idx}][days_to_checkout_value]" value="1" min="0" max="999">
+                                    <span class="unit-label">days</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
             
             container.insertAdjacentHTML('beforeend', html);
         }
+
+        // ─── Show/hide condition value input when operator changes ──
+        $(document).on('change', '.cond-operator', function() {
+            const op = $(this).val();
+            const targetId = $(this).data('target');
+            const $valueGroup = $('#' + targetId);
+            if (op === 'any') {
+                $valueGroup.hide();
+            } else {
+                $valueGroup.show();
+            }
+        });
 
         // Handle mutual exclusivity for "All Platforms" checkbox
         $(document).on('change', '.checkbox-item input[type="checkbox"]', function() {
@@ -1209,24 +1449,53 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                 $(this).closest('.field-row').find('input[type="checkbox"]').prop('checked', false);
             });
 
-            // "Saving..." Animation
+            // "Saving..." Animation + comprehensive validation
             $('#sop-form').on('submit', function(e) {
-                // Validation: Scan Days Ahead vs Reminder Hours (skip if immediate)
                 let hasError = false;
                 $('.sop-card').each(function() {
                     const block = $(this);
                     const isImmediate = block.find('.immediate-toggle').is(':checked');
-                    if (isImmediate) return true; // skip validation for immediate SOPs
+                    const name = block.find('input[name*="[name]"]').val() || 'Unnamed SOP';
 
-                    const name = block.find('input[name*="[name]"]').val();
-                    const hours = parseInt(block.find('input[name*="[reminder_hours_before]"]').val()) || 0;
-                    const days = parseInt(block.find('input[name*="[scan_days_ahead]"]').val()) || 0;
-                    
-                    if (days * 24 < hours) {
-                        alert(`Error in SOP "${name}":\nScan Days Ahead (${days} days = ${days*24} hours) must be >= Reminder Hours Before (${hours} hours).\n\nPlease increase Scan Days Ahead.`);
-                        hasError = true;
-                        return false; // break loop
+                    // When Send Immediately is ON → scan = 365, skip timing-based checks
+                    if (!isImmediate) {
+                        const hours = parseInt(block.find('input[name*="[reminder_hours_before]"]').val()) || 0;
+                        const days  = parseInt(block.find('input[name*="[scan_days_ahead]"]').val()) || 0;
+
+                        // 1. Scan vs Reminder Hours
+                        if (days * 24 < hours) {
+                            alert(`⚠️ SOP "${name}":\nScan Days Ahead (${days}d = ${days*24}h) must be ≥ Reminder Hours Before (${hours}h).\n\nPlease increase Scan Days Ahead.`);
+                            hasError = true;
+                            return false;
+                        }
+
+                        // 2. Scan vs Days-to-Check-in condition
+                        const diOp  = block.find('select[name*="[days_to_checkin_operator]"]').val();
+                        const diVal = parseInt(block.find('input[name*="[days_to_checkin_value]"]').val()) || 0;
+                        if (diOp !== 'any' && (diOp === 'eq' || diOp === 'gte' || diOp === 'gt')) {
+                            // Condition requires check-in to be >= N days away, scan must cover N days
+                            const minScan = diOp === 'gt' ? diVal + 1 : diVal;
+                            if (days < minScan) {
+                                alert(`⚠️ SOP "${name}" — Days to Check-in condition issue:\nYou set "${diOp} ${diVal} days" but Scan Days Ahead is only ${days}.\n\nThe scan window won't reach that far — this condition will never fire.\nIncrease Scan Days Ahead to at least ${minScan}.`);
+                                hasError = true;
+                                return false;
+                            }
+                        }
+
+                        // 3. Scan vs Days-to-Check-out condition
+                        const doOp  = block.find('select[name*="[days_to_checkout_operator]"]').val();
+                        const doVal = parseInt(block.find('input[name*="[days_to_checkout_value]"]').val()) || 0;
+                        if (doOp !== 'any' && (doOp === 'eq' || doOp === 'gte' || doOp === 'gt')) {
+                            const minScan = doOp === 'gt' ? doVal + 1 : doVal;
+                            if (days < minScan) {
+                                alert(`⚠️ SOP "${name}" — Days to Check-out condition issue:\nYou set "${doOp} ${doVal} days" but Scan Days Ahead is only ${days}.\n\nThe scan window won't reach that far — this condition will never fire.\nIncrease Scan Days Ahead to at least ${minScan}.`);
+                                hasError = true;
+                                return false;
+                            }
+                        }
                     }
+                    // Note: Send Immediately SOPs skip the above because scan is forced to 365 days.
+                    // Lead-time and Nights conditions have no scan-window dependency — always valid.
                 });
 
                 if (hasError) {
@@ -1235,10 +1504,63 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                 }
 
                 const btn = $(this).find('#save-all-btn');
-                if(btn.length) {
+                if (btn.length) {
                     btn.prop('disabled', true).text('⏳ Saving...');
                 }
             });
+
+            // Live inline scan-window warning for Days to Check-in / Check-out
+            function checkScanWindowHint(block) {
+                if (!block || !block.length) return;
+                const isImmediate = block.find('.immediate-toggle').is(':checked');
+                const days = parseInt(block.find('input[name*="[scan_days_ahead]"]').val()) || 0;
+
+                [['days_to_checkin', '🚪'], ['days_to_checkout', '🏁']].forEach(([key, icon]) => {
+                    const op  = block.find(`select[name*="[${key}_operator]"]`).val();
+                    const val = parseInt(block.find(`input[name*="[${key}_value]"]`).val()) || 0;
+                    let hintEl = block.find(`.scan-hint-${key}`);
+
+                    // Create hint element if it doesn't exist yet
+                    if (!hintEl.length) {
+                        block.find(`select[name*="[${key}_operator]"]`).closest('.condition-row')
+                            .append(`<div class="scan-hint scan-hint-${key}"></div>`);
+                        hintEl = block.find(`.scan-hint-${key}`);
+                    }
+
+                    if (isImmediate) {
+                        hintEl.html(`<span style="color:var(--accent-green);font-size:0.7rem;">⚡ Send Immediately → scan = 365d, no window issue.</span>`).show();
+                        return;
+                    }
+
+                    if (op === 'any') { hintEl.hide(); return; }
+
+                    const needsFarScan = (op === 'gte' || op === 'eq' || op === 'gt');
+                    if (needsFarScan) {
+                        const minScan = op === 'gt' ? val + 1 : val;
+                        if (days < minScan) {
+                            hintEl.html(`<span style="color:var(--accent-amber);font-size:0.7rem;">⚠️ Scan Days Ahead is ${days}d but condition needs ≥${minScan}d — will never fire.</span>`).show();
+                        } else {
+                            hintEl.html(`<span style="color:var(--accent-green);font-size:0.7rem;">✓ Scan Days Ahead (${days}d) covers this condition.</span>`).show();
+                        }
+                    } else {
+                        // lt / lte — condition targets near-term check-ins, scan window is fine if >= 1
+                        hintEl.html(`<span style="color:var(--text-dim);font-size:0.7rem;">ℹ️ This fires for check-ins within the scan window (${days}d) that meet the condition.</span>`).show();
+                    }
+                });
+            }
+
+            // Trigger hint check on relevant field changes
+            $(document).on('change', 'select[name*="[days_to_checkin_operator]"], select[name*="[days_to_checkout_operator]"]', function() {
+                checkScanWindowHint($(this).closest('.sop-card'));
+            });
+            $(document).on('input change', 'input[name*="[scan_days_ahead]"]', function() {
+                checkScanWindowHint($(this).closest('.sop-card'));
+            });
+            $(document).on('change', '.immediate-toggle', function() {
+                checkScanWindowHint($(this).closest('.sop-card'));
+            });
+            // Run on page load for all existing cards
+            $('.sop-card').each(function() { checkScanWindowHint($(this)); });
         });
     </script>
 </body>

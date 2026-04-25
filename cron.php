@@ -15,6 +15,28 @@ require_once __DIR__ . '/hospitable_api.php';
 require_once __DIR__ . '/shift_scheduler.php';
 require_once __DIR__ . '/slack.php';
 
+// ─── Condition helper ──────────────────────────────────────────
+/**
+ * Evaluate a simple comparison condition.
+ *
+ * @param string $operator  One of: any | lt | lte | eq | gte | gt
+ * @param int    $actual    The real measured value (nights, lead-time days, …)
+ * @param int    $threshold The configured N value to compare against
+ * @return bool  true = condition passes (SOP should fire)
+ */
+function evaluateCondition(string $operator, int $actual, int $threshold): bool
+{
+    switch ($operator) {
+        case 'any': return true;
+        case 'lt':  return $actual <  $threshold;
+        case 'lte': return $actual <= $threshold;
+        case 'eq':  return $actual === $threshold;
+        case 'gte': return $actual >= $threshold;
+        case 'gt':  return $actual >  $threshold;
+        default:    return true; // unknown operator → don't block
+    }
+}
+
 if (php_sapi_name() !== 'cli') {
     // If running via a browser, ensure it doesn't time out or stop if the tab is closed
     set_time_limit(0);
@@ -218,7 +240,76 @@ if (empty($sops) || empty($activePropertyUuids)) {
                 $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] = "Skipped (Already scheduled)";
                 continue; // Already scheduled
             }
-            
+
+            // ── Conditional Filters ───────────────────────────────
+            // 1. Lead-time filter: days between booking_date and check_in
+            $leadTimeOp  = $sop['lead_time_operator'] ?? 'any';
+            if ($leadTimeOp !== 'any') {
+                $leadTimeVal     = (int) ($sop['lead_time_value'] ?? 0);
+                $bookingDateRaw  = $res['booking_date'] ?? null;
+                if ($bookingDateRaw && $checkIn) {
+                    $bookingTs  = strtotime(substr($bookingDateRaw, 0, 10));
+                    $checkInTs  = strtotime($checkIn);
+                    $leadDays   = (int) round(($checkInTs - $bookingTs) / 86400);
+                } else {
+                    $leadDays = 0;
+                }
+                if (!evaluateCondition($leadTimeOp, $leadDays, $leadTimeVal)) {
+                    $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] =
+                        "Skipped (Lead-time {$leadDays}d does not satisfy {$leadTimeOp} {$leadTimeVal}d)";
+                    logMessage("Reservation $reservationId ({$sop['name']}): SKIPPED — lead-time {$leadDays}d not {$leadTimeOp} {$leadTimeVal}d");
+                    continue;
+                }
+            }
+
+            // 2. Stay-length filter: number of nights in the reservation
+            $nightsOp = $sop['nights_operator'] ?? 'any';
+            if ($nightsOp !== 'any') {
+                $nightsVal    = (int) ($sop['nights_value'] ?? 1);
+                $actualNights = (int) ($res['nights'] ?? 0);
+                if ($actualNights === 0 && $checkIn && $checkOut) {
+                    // Fallback: calculate from dates if 'nights' field is missing
+                    $actualNights = (int) round((strtotime($checkOut) - strtotime($checkIn)) / 86400);
+                }
+                if (!evaluateCondition($nightsOp, $actualNights, $nightsVal)) {
+                    $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] =
+                        "Skipped (Nights {$actualNights} does not satisfy {$nightsOp} {$nightsVal})";
+                    logMessage("Reservation $reservationId ({$sop['name']}): SKIPPED — {$actualNights} nights not {$nightsOp} {$nightsVal}");
+                    continue;
+                }
+            }
+
+            // 3. Days-until-check-in filter: days from TODAY (midnight) to check_in date
+            $daysToInOp = $sop['days_to_checkin_operator'] ?? 'any';
+            if ($daysToInOp !== 'any' && $checkIn) {
+                $daysToInVal    = (int) ($sop['days_to_checkin_value'] ?? 0);
+                $todayMidnight  = strtotime('today midnight');
+                $checkInMidnight = strtotime($checkIn);
+                $daysToCheckIn  = (int) floor(($checkInMidnight - $todayMidnight) / 86400);
+                if (!evaluateCondition($daysToInOp, $daysToCheckIn, $daysToInVal)) {
+                    $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] =
+                        "Skipped (Days to check-in {$daysToCheckIn}d does not satisfy {$daysToInOp} {$daysToInVal}d)";
+                    logMessage("Reservation $reservationId ({$sop['name']}): SKIPPED — {$daysToCheckIn}d to check-in not {$daysToInOp} {$daysToInVal}d");
+                    continue;
+                }
+            }
+
+            // 4. Days-until-check-out filter: days from TODAY (midnight) to check_out date
+            $daysToOutOp = $sop['days_to_checkout_operator'] ?? 'any';
+            if ($daysToOutOp !== 'any' && $checkOut) {
+                $daysToOutVal    = (int) ($sop['days_to_checkout_value'] ?? 0);
+                $todayMidnight   = $todayMidnight ?? strtotime('today midnight');
+                $checkOutMidnight = strtotime($checkOut);
+                $daysToCheckOut  = (int) floor(($checkOutMidnight - $todayMidnight) / 86400);
+                if (!evaluateCondition($daysToOutOp, $daysToCheckOut, $daysToOutVal)) {
+                    $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] =
+                        "Skipped (Days to check-out {$daysToCheckOut}d does not satisfy {$daysToOutOp} {$daysToOutVal}d)";
+                    logMessage("Reservation $reservationId ({$sop['name']}): SKIPPED — {$daysToCheckOut}d to check-out not {$daysToOutOp} {$daysToOutVal}d");
+                    continue;
+                }
+            }
+            // ── End Conditional Filters ───────────────────────────
+
             $sendImmediately = !empty($sop['send_immediately']);
             $reminderHours = (int) ($sop['reminder_hours_before'] ?? env('REMINDER_HOURS_BEFORE', 12));
             $sopMessage = $sop['sop_message'] ?? 'No SOP message defined.';
