@@ -74,15 +74,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sopId = !empty($sopData['id']) ? $sopData['id'] : 'sop_' . uniqid();
             
             $sendImmediately = !empty($sopData['send_immediately']);
-            $remHours = (int) ($sopData['reminder_hours_before'] ?: env('REMINDER_HOURS_BEFORE', 12));
+            $scheduleAnchor = ($sopData['schedule_anchor'] ?? 'check_in') === 'check_out' ? 'check_out' : 'check_in';
+            $scheduleRelation = in_array($sopData['schedule_relation'] ?? 'before', ['before', 'at', 'after'], true)
+                ? $sopData['schedule_relation']
+                : 'before';
+            $legacyHours = (float) ($sopData['reminder_hours_before'] ?? env('REMINDER_HOURS_BEFORE', 12));
+            $scheduleOffsetHours = $scheduleRelation === 'at'
+                ? 0.0
+                : max(0.0, (float) ($sopData['schedule_offset_hours'] ?? $legacyHours));
+            $scheduleRandomized = $scheduleRelation !== 'at' && !empty($sopData['schedule_randomized']);
+            $remHours = $scheduleOffsetHours;
             $scanDays = (int) ($sopData['scan_days_ahead'] ?: 2);
             
             // Backend correction: Ensure scan_days_ahead is large enough to cover the reminder window
             if ($sendImmediately) {
                 // Immediate mode: scan the full year to catch all new bookings
                 $scanDays = 365;
-            } else {
-                $minDaysNeeded = (int) ceil($remHours / 24);
+            } elseif ($scheduleRelation === 'before') {
+                $minDaysNeeded = (int) ceil($scheduleOffsetHours / 24);
                 if ($scanDays < $minDaysNeeded) {
                     $scanDays = $minDaysNeeded;
                 }
@@ -103,6 +112,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'name' => trim($sopData['name'] ?? 'Unnamed SOP'),
                 'sop_message' => trim($sopData['sop_message'] ?? ''),
                 'send_immediately' => $sendImmediately,
+                'schedule_anchor' => $scheduleAnchor,
+                'schedule_relation' => $scheduleRelation,
+                'schedule_offset_hours' => $scheduleOffsetHours,
+                'schedule_randomized' => $scheduleRandomized,
                 'reminder_hours_before' => $remHours,
                 'scan_days_ahead' => $scanDays,
                 'properties' => $sopData['properties'] ?? [], // Array of enabled property UUIDs for this SOP
@@ -187,6 +200,22 @@ try {
 }
 
 $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
+$totalSops = count($config['sops']);
+$totalProperties = count($config['properties']);
+$scheduledCount = 0;
+$sentCount = 0;
+$failedCount = 0;
+
+foreach ($reminders as $reminder) {
+    $status = $reminder['status'] ?? '';
+    if ($status === 'scheduled') {
+        $scheduledCount++;
+    } elseif ($status === 'sent') {
+        $sentCount++;
+    } elseif ($status === 'failed') {
+        $failedCount++;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -196,7 +225,7 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
     <title>SOP Reminder Manager</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         :root {
@@ -759,35 +788,777 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
             font-size: 0.82rem;
             font-weight: 500;
         }
+
+        :root {
+            --page-bg: #f3efe4;
+            --page-bg-alt: #ece6d7;
+            --paper: #fffdfa;
+            --paper-soft: #faf7f0;
+            --ink: #24211b;
+            --muted: #6e6659;
+            --line: #c8beac;
+            --line-strong: #9d9078;
+            --masthead: #ddd4ef;
+            --masthead-line: #b2a6cb;
+            --link: #2547a7;
+            --link-hover: #1a3478;
+            --success: #2f6c42;
+            --success-bg: #edf7ee;
+            --warning: #8b6519;
+            --warning-bg: #fbf3e0;
+            --danger: #8a3126;
+            --danger-bg: #f8e9e4;
+            --shadow: 0 1px 0 rgba(28, 24, 18, 0.08);
+        }
+
+        body {
+            font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0)) 0 0 / 100% 280px no-repeat,
+                linear-gradient(180deg, var(--page-bg), var(--page-bg-alt));
+            color: var(--ink);
+            padding: 24px 16px 40px;
+            max-width: none;
+        }
+
+        .site-shell {
+            max-width: 1240px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            background: var(--masthead);
+            border: 1px solid var(--masthead-line);
+            box-shadow: var(--shadow);
+            padding: 18px 22px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 18px;
+        }
+
+        .eyebrow {
+            font-size: 0.8rem;
+            text-transform: lowercase;
+            letter-spacing: 0.08em;
+            color: #5f5678;
+            margin-bottom: 8px;
+        }
+
+        .page-header h1,
+        .side-card h2,
+        .section-header h2,
+        .sop-card-header .sop-title {
+            font-family: 'Libre Baskerville', Georgia, serif;
+        }
+
+        .page-header h1 {
+            font-size: clamp(2rem, 4vw, 2.85rem);
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            color: #2e2942;
+            margin-bottom: 0;
+        }
+
+        .page-header > h1,
+        .page-header > .subtitle {
+            display: none;
+        }
+
+        .page-header .subtitle,
+        .header-meta p {
+            color: #584f68;
+            font-size: 0.98rem;
+        }
+
+        .header-meta {
+            min-width: 220px;
+            max-width: 280px;
+        }
+
+        .meta-pill {
+            display: inline-block;
+            border: 1px solid #8d81ac;
+            background: rgba(255, 255, 255, 0.55);
+            color: #3e3558;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
+        }
+
+        .page-grid {
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
+
+        .sidebar {
+            display: grid;
+            gap: 14px;
+            position: sticky;
+            top: 16px;
+        }
+
+        .side-card,
+        .content-panel,
+        .msg,
+        #api-loading-banner,
+        .db-setup-banner {
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 0;
+            box-shadow: var(--shadow);
+        }
+
+        .side-card,
+        .content-panel {
+            padding: 18px 20px;
+        }
+
+        .side-card h2,
+        .section-header h2 {
+            font-size: 1.28rem;
+            line-height: 1.15;
+            color: var(--ink);
+        }
+
+        .side-card h2 {
+            margin-bottom: 14px;
+        }
+
+        .stat-list {
+            list-style: none;
+            display: grid;
+            gap: 9px;
+        }
+
+        .stat-list li {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: baseline;
+            padding-bottom: 6px;
+            border-bottom: 1px dotted var(--line);
+        }
+
+        .stat-list li:last-child {
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .stat-list span {
+            color: var(--muted);
+        }
+
+        .stat-list strong {
+            font-weight: 700;
+        }
+
+        .info-box {
+            background: var(--paper);
+            border-color: var(--line);
+            color: var(--ink);
+            margin-bottom: 0;
+            padding: 18px 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .info-box h2 {
+            font-family: 'Libre Baskerville', Georgia, serif;
+            font-size: 1.28rem;
+            line-height: 1.15;
+            margin-bottom: 14px;
+            color: var(--ink);
+        }
+
+        .info-box p + p {
+            margin-top: 10px;
+        }
+
+        .msg {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            font-size: 0;
+        }
+
+        .msg strong {
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+        }
+
+        .msg span {
+            font-size: 0.92rem;
+        }
+
+        .msg.success {
+            background: var(--success-bg);
+            color: var(--success);
+            border-color: #bdd7c0;
+        }
+
+        .msg.error {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border-color: #dfc2b8;
+        }
+
+        #api-loading-banner,
+        .db-setup-banner {
+            padding: 14px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            margin-bottom: 0;
+        }
+
+        #api-loading-banner {
+            background: var(--warning-bg);
+            border-color: #dccba1;
+            color: var(--warning);
+            font-weight: 400;
+        }
+
+        #api-loading-banner strong,
+        .db-setup-banner strong {
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border-color: currentColor;
+            margin-top: 3px;
+        }
+
+        .db-setup-banner {
+            background: #fff4ea;
+            border-color: #dfbea6;
+            justify-content: space-between;
+        }
+
+        .db-setup-banner > div {
+            color: #7d4c1d;
+        }
+
+        .db-setup-banner > span {
+            display: none;
+        }
+
+        .content-column {
+            display: grid;
+            gap: 20px;
+        }
+
+        .section-header {
+            margin: 0 0 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--line);
+            align-items: flex-end;
+            gap: 16px;
+        }
+
+        .section-intro {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 0.96rem;
+        }
+
+        .count-badge {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 3px 8px;
+            border: 1px solid #beb1d6;
+            background: #f0ebfa;
+            color: #463a6d;
+            font-family: 'Source Sans 3', sans-serif;
+            font-size: 0.78rem;
+            border-radius: 0;
+            vertical-align: middle;
+        }
+
+        .btn {
+            border-radius: 0;
+            border: 1px solid var(--line-strong);
+            background: #f7f3ea;
+            color: var(--ink);
+            font-size: 0.95rem;
+            padding: 9px 14px;
+        }
+
+        .btn:hover {
+            background: #ebe4d6;
+            border-color: #867763;
+        }
+
+        .btn-primary {
+            background: #4c4685;
+            color: #fff;
+            border-color: #3f3a71;
+        }
+
+        .btn-primary:hover {
+            background: #3f3a71;
+            border-color: #322d5b;
+        }
+
+        .btn-danger {
+            background: #fff4ef;
+            color: var(--danger);
+            border-color: #d9b4a8;
+        }
+
+        .btn-danger:hover {
+            background: #f7e4dc;
+            border-color: #c69688;
+        }
+
+        .sop-card .btn-danger,
+        .db-setup-banner form .btn,
+        #save-all-btn {
+            font-size: 0;
+        }
+
+        .sop-card .btn-danger::after {
+            content: 'Remove';
+            font-size: 0.86rem;
+        }
+
+        .db-setup-banner form .btn::after {
+            content: 'Setup database';
+            font-size: 0.86rem;
+        }
+
+        #save-all-btn::after {
+            content: 'Save all SOPs';
+            font-size: 1rem;
+        }
+
+        #save-all-btn.is-busy::after {
+            content: 'Saving...';
+        }
+
+        #save-all-btn:disabled::after {
+            content: 'Saving...';
+        }
+
+        .btn-sm {
+            padding: 7px 11px;
+            font-size: 0.86rem;
+        }
+
+        .sop-card {
+            background: var(--paper-soft);
+            border: 1px solid var(--line);
+            border-radius: 0;
+            box-shadow: var(--shadow);
+            margin-bottom: 14px;
+        }
+
+        .sop-card-header {
+            background: #f2ede2;
+            gap: 16px;
+            padding: 14px 16px;
+        }
+
+        .sop-card-header:hover {
+            background: #ebe4d6;
+        }
+
+        .sop-card-header .left {
+            flex-wrap: wrap;
+        }
+
+        .sop-card-header .chevron {
+            color: var(--muted);
+            font-size: 0;
+        }
+
+        .sop-card-header .chevron::before {
+            content: '>';
+            font-size: 0.8rem;
+        }
+
+        .sop-card-header .sop-title {
+            font-size: 1.08rem;
+            color: var(--link);
+            text-decoration: underline;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 2px;
+        }
+
+        .sop-card-header .sop-meta {
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .badge-immediate {
+            padding: 2px 7px;
+            border: 1px solid #cdbf82;
+            background: #faf1c8;
+            color: #6b5313;
+            font-size: 0.73rem;
+            border-radius: 0;
+        }
+
+        .badge-immediate {
+            font-size: 0;
+        }
+
+        .badge-immediate::after {
+            content: 'Instant';
+            font-size: 0.73rem;
+        }
+
+        .sop-card-body {
+            padding: 16px;
+            border-top: 1px solid var(--line);
+            background: var(--paper);
+        }
+
+        .field-group {
+            margin-bottom: 14px;
+            padding: 14px 15px;
+            background: var(--paper-soft);
+            border: 1px solid #ded5c6;
+        }
+
+        .field-group-title {
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px dotted var(--line);
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: #4f473c;
+        }
+
+        .field-hint {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            background: #fff;
+            border: 1px solid var(--line-strong);
+            border-radius: 0;
+            color: var(--ink);
+            font-family: inherit;
+        }
+
+        input[type="number"] {
+            width: 120px;
+        }
+
+        textarea {
+            min-height: 118px;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--link);
+            box-shadow: 0 0 0 2px rgba(37, 71, 167, 0.08);
+        }
+
+        .inline-fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .toggle-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            background: #fff;
+            border: 1px solid #ddd3c3;
+            border-radius: 0;
+        }
+
+        .toggle-row .toggle-label {
+            font-size: 0.95rem;
+            color: var(--ink);
+        }
+
+        .toggle-row .toggle-sub {
+            font-size: 0.84rem;
+            color: var(--muted);
+        }
+
+        .switch .slider {
+            background: #cbbfa9;
+            border-radius: 0;
+        }
+
+        .switch .slider::before {
+            border-radius: 0;
+        }
+
+        .switch input:checked + .slider {
+            background: #678f68;
+        }
+
+        .search-bar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            gap: 8px;
+        }
+
+        .checkbox-list {
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 6px 12px;
+            padding: 10px 12px;
+            border: 1px solid #ddd3c3;
+            border-radius: 0;
+            background: #fff;
+        }
+
+        .checkbox-item {
+            padding: 3px 0;
+            border-radius: 0;
+            font-size: 0.9rem;
+            color: var(--ink);
+        }
+
+        .checkbox-item:hover {
+            background: transparent;
+            color: var(--link-hover);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            accent-color: var(--link);
+        }
+
+        .condition-row {
+            display: grid;
+            grid-template-columns: minmax(170px, 220px) minmax(0, 1fr) auto;
+            gap: 10px;
+            background: #fff;
+            border: 1px solid #ddd3c3;
+            border-radius: 0;
+        }
+
+        .condition-row .cond-label {
+            font-size: 0.88rem;
+            color: #4f473c;
+        }
+
+        .cond-value-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .unit-label,
+        .scan-hint {
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .scan-hint {
+            grid-column: 1 / -1;
+            line-height: 1.35;
+        }
+
+        .save-bar {
+            margin-top: 18px;
+            padding: 0;
+        }
+
+        .save-bar .btn-primary {
+            min-width: 170px;
+            font-size: 1rem;
+            padding: 11px 18px;
+        }
+
+        .table-wrapper {
+            border: 1px solid var(--line);
+            border-radius: 0;
+            background: var(--paper);
+            box-shadow: var(--shadow);
+        }
+
+        table {
+            font-size: 0.92rem;
+        }
+
+        th,
+        td {
+            padding: 11px 12px;
+            border-bottom: 1px solid #e3dccf;
+        }
+
+        th {
+            background: #eee7d8;
+            color: #544d40;
+            font-size: 0.79rem;
+        }
+
+        tbody tr:nth-child(even) td {
+            background: #fbfaf6;
+        }
+
+        tbody tr:hover td {
+            background: #f4efdf;
+        }
+
+        .status-scheduled {
+            color: var(--warning);
+            font-weight: 700;
+        }
+
+        .status-sent {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .status-failed {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .empty-state {
+            text-align: left;
+            padding: 26px 18px;
+            border: 1px dashed var(--line-strong);
+            background: #fbf8f1;
+            color: var(--muted);
+        }
+
+        @media (max-width: 980px) {
+            .page-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            }
+
+            .page-header {
+                align-items: flex-start;
+            }
+
+            .header-meta {
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 12px 10px 28px;
+            }
+
+            .page-header,
+            .section-header,
+            .sop-card-header,
+            .db-setup-banner {
+                display: block;
+            }
+
+            .header-meta,
+            .sop-card-header .right {
+                margin-top: 12px;
+            }
+
+            .side-card,
+            .content-panel,
+            .sop-card-body {
+                padding: 14px;
+            }
+
+            .inline-fields,
+            .search-bar,
+            .condition-row {
+                grid-template-columns: 1fr;
+            }
+
+            .checkbox-list {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
+    <div class="site-shell">
     <div class="page-header">
-        <h1>🏠 SOP Reminder Manager</h1>
-        <p class="subtitle">Hospitable → Slack Smart Bridge (Multi-SOP v2)</p>
+        <div class="header-copy">
+            <div class="eyebrow">team tools / reminders</div>
+            <h1>SOP Reminder Manager</h1>
+            <p class="subtitle">Hospitable to Slack bridge for routing property SOP reminders without the dashboard clutter.</p>
+        </div>
+        <div class="header-meta">
+            <div class="meta-pill">multi-sop v2</div>
+            <p>Plain, scannable, and easier to manage at a glance.</p>
+        </div>
     </div>
 
     <?php if ($message): ?>
         <div class="msg <?= htmlspecialchars($messageType) ?>">
-            <?= $messageType === 'success' ? '✅' : '❌' ?>
-            <?= htmlspecialchars($message) ?>
+            <strong><?= $messageType === 'success' ? 'Saved' : 'Error' ?></strong>
+            <span><?= htmlspecialchars($message) ?></span>
         </div>
     <?php endif; ?>
 
+    <div class="page-grid">
+        <aside class="sidebar">
+            <div class="side-card">
+                <h2>Overview</h2>
+                <ul class="stat-list">
+                    <li><span>Configured SOPs</span><strong data-sop-count><?= $totalSops ?></strong></li>
+                    <li><span>Tracked properties</span><strong><?= $totalProperties ?></strong></li>
+                    <li><span>Recent reminders</span><strong><?= count($reminders) ?></strong></li>
+                    <li><span>Default lead time</span><strong><?= $defaultReminderHours ?>h</strong></li>
+                </ul>
+            </div>
+
+            <div class="side-card">
+                <h2>Reminder Status</h2>
+                <ul class="stat-list">
+                    <li><span>Scheduled</span><strong class="status-scheduled"><?= $scheduledCount ?></strong></li>
+                    <li><span>Sent</span><strong class="status-sent"><?= $sentCount ?></strong></li>
+                    <li><span>Failed</span><strong class="status-failed"><?= $failedCount ?></strong></li>
+                </ul>
+            </div>
+
     <div class="info-box">
-        <strong>How it works:</strong> Create multiple SOPs below. Each SOP has its own message, reminder time, and assigned properties.
-        The system handles scheduling guests for all their associated SOPs.
+        <h2>Workflow</h2>
+        <p>Build SOPs like listings: write the Slack copy, choose timing, filter by platform, then assign properties.</p>
+        <p>The cron job handles reservation discovery and reminder scheduling after that.</p>
     </div>
 
     <div id="api-loading-banner">
         <span class="spinner"></span>
-        Fetching latest properties from Hospitable API...
+        <div>
+            <strong>Syncing properties</strong>
+            <span>Pulling the latest property and platform list from Hospitable.</span>
+        </div>
     </div>
 
     <!-- ═══ DB Setup Button ═══ -->
     <?php if (!$dbExists): ?>
     <div class="db-setup-banner">
-        <span>⚠️ Database table not detected.</span>
+        <div>
+            <strong>Database setup required</strong>
+            <span>The reminders table was not found yet.</span>
+        </div>
+        <span>Database table not detected.</span>
         <form method="POST" style="display:inline;">
             <input type="hidden" name="action" value="run_db_setup">
             <button type="submit" class="btn btn-secondary btn-sm"
@@ -799,12 +1570,19 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
     <?php endif; ?>
 
     <!-- ═══ SOP Builder ═══ -->
-    <form method="POST" id="sop-form">
+        </aside>
+
+        <main class="content-column">
+            <section class="content-panel">
+                <form method="POST" id="sop-form">
         <input type="hidden" name="action" value="save_config">
         
         <div class="section-header">
-            <h2>Your SOPs <span class="count-badge"><?= count($config['sops']) ?></span></h2>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="addSop()">+ Add SOP</button>
+            <div>
+                <h2>Your SOPs <span class="count-badge" data-sop-count><?= $totalSops ?></span></h2>
+                <p class="section-intro">Keep each SOP narrow and readable: one purpose, one message, one set of rules.</p>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="addSop()">Add SOP</button>
         </div>
 
         <div id="sop-container">
@@ -812,20 +1590,27 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                 <?php
                     $isImmediate = !empty($sop['send_immediately']);
                     $propCount = count($sop['properties'] ?? []);
+                    $propertySummary = $propCount === 1 ? '1 property assigned' : $propCount . ' properties assigned';
+                    $scheduleAnchor = ($sop['schedule_anchor'] ?? 'check_in') === 'check_out' ? 'check_out' : 'check_in';
+                    $scheduleRelation = in_array($sop['schedule_relation'] ?? 'before', ['before', 'at', 'after'], true) ? $sop['schedule_relation'] : 'before';
+                    $scheduleOffsetHours = $scheduleRelation === 'at'
+                        ? 0
+                        : ($sop['schedule_offset_hours'] ?? $sop['reminder_hours_before'] ?? $defaultReminderHours);
+                    $scheduleRandomized = array_key_exists('schedule_randomized', $sop) ? !empty($sop['schedule_randomized']) : true;
                 ?>
-                <div class="sop-card expanded" id="sop-block-<?= $index ?>">
+                <div class="sop-card" id="sop-block-<?= $index ?>">
                     <!-- Card Header -->
                     <div class="sop-card-header" onclick="toggleSopCard(this)">
                         <div class="left">
-                            <span class="chevron">▶</span>
+                            <span class="chevron">></span>
                             <span class="sop-title"><?= htmlspecialchars($sop['name'] ?? 'Unnamed SOP') ?></span>
                             <?php if ($isImmediate): ?>
-                                <span class="badge-immediate">⚡ Instant</span>
+                                <span class="badge-immediate">Instant</span>
                             <?php endif; ?>
-                            <span class="sop-meta"><?= $propCount ?> properties</span>
+                            <span class="sop-meta"><?= htmlspecialchars($propertySummary) ?></span>
                         </div>
                         <div class="right">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="event.stopPropagation(); removeSop(this);">✕ Remove</button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="event.stopPropagation(); removeSop(this);">Remove</button>
                         </div>
                     </div>
 
@@ -857,7 +1642,7 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                             
                             <div class="toggle-row">
                                 <div class="toggle-info">
-                                    <span class="toggle-label">⚡ Send Immediately on Discovery</span>
+                                    <span class="toggle-label">Send immediately on discovery</span>
                                     <span class="toggle-sub">Sends the reminder as soon as the cron discovers the booking (no waiting).</span>
                                 </div>
                                 <label class="switch">
@@ -871,12 +1656,42 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                             <div class="timing-fields <?= $isImmediate ? 'disabled' : '' ?>">
                                 <div class="inline-fields">
                                     <div class="field-row">
-                                        <label>Reminder Hours Before Check-in</label>
+                                        <label>Anchor</label>
+                                        <select name="sops[<?= $index ?>][schedule_anchor]">
+                                            <option value="check_in" <?= $scheduleAnchor === 'check_in' ? 'selected' : '' ?>>Check-in</option>
+                                            <option value="check_out" <?= $scheduleAnchor === 'check_out' ? 'selected' : '' ?>>Check-out</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="field-row">
+                                        <label>Timing</label>
+                                        <select name="sops[<?= $index ?>][schedule_relation]" class="schedule-relation" onchange="toggleScheduleOffset(this)">
+                                            <option value="before" <?= $scheduleRelation === 'before' ? 'selected' : '' ?>>Before</option>
+                                            <option value="at" <?= $scheduleRelation === 'at' ? 'selected' : '' ?>>At exact time</option>
+                                            <option value="after" <?= $scheduleRelation === 'after' ? 'selected' : '' ?>>After</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="field-row schedule-offset-row" <?= $scheduleRelation === 'at' ? 'style="display:none;"' : '' ?>>
+                                        <label>Offset Hours</label>
                                         <input type="number"
+                                               name="sops[<?= $index ?>][schedule_offset_hours]"
+                                               value="<?= htmlspecialchars($scheduleOffsetHours) ?>"
+                                               min="0" step="0.25">
+                                        <input type="hidden"
                                                name="sops[<?= $index ?>][reminder_hours_before]"
-                                               value="<?= htmlspecialchars($sop['reminder_hours_before'] ?? $defaultReminderHours) ?>"
-                                               min="1" max="8760">
-                                        <div class="field-hint">How many hours before check-in to aim for. Max: 8760 (1 year).</div>
+                                               value="<?= htmlspecialchars($scheduleOffsetHours) ?>">
+                                        <div class="field-hint">Number of hours before or after the selected anchor.</div>
+                                    </div>
+
+                                    <div class="field-row schedule-random-row" <?= $scheduleRelation === 'at' ? 'style="display:none;"' : '' ?>>
+                                        <label>Randomized Shift Timing</label>
+                                        <label class="checkbox-item">
+                                            <input type="checkbox"
+                                                   name="sops[<?= $index ?>][schedule_randomized]"
+                                                   value="1" <?= $scheduleRandomized ? 'checked' : '' ?>>
+                                            Use the shift-window randomizer around the target time.
+                                        </label>
                                     </div>
 
                                     <div class="field-row">
@@ -967,14 +1782,14 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
 
                             <!-- Lead-time condition -->
                             <div class="condition-row">
-                                <span class="cond-label">📅 Booking Lead-time</span>
+                                <span class="cond-label">Booking lead-time</span>
                                 <select name="sops[<?= $index ?>][lead_time_operator]" class="cond-operator" data-target="lt-val-<?= $index ?>">
                                     <option value="any"  <?= $ltOp==='any'  ? 'selected':'' ?>>Any lead-time</option>
-                                    <option value="lt"   <?= $ltOp==='lt'   ? 'selected':'' ?>>Less than N days (booking→check-in)</option>
-                                    <option value="lte"  <?= $ltOp==='lte'  ? 'selected':'' ?>>≤ N days (booking→check-in)</option>
-                                    <option value="eq"   <?= $ltOp==='eq'   ? 'selected':'' ?>>Exactly N days (booking→check-in)</option>
-                                    <option value="gte"  <?= $ltOp==='gte'  ? 'selected':'' ?>>≥ N days (booking→check-in)</option>
-                                    <option value="gt"   <?= $ltOp==='gt'   ? 'selected':'' ?>>More than N days (booking→check-in)</option>
+                                    <option value="lt"   <?= $ltOp==='lt'   ? 'selected':'' ?>>Less than N days (booking to check-in)</option>
+                                    <option value="lte"  <?= $ltOp==='lte'  ? 'selected':'' ?>><= N days (booking to check-in)</option>
+                                    <option value="eq"   <?= $ltOp==='eq'   ? 'selected':'' ?>>Exactly N days (booking to check-in)</option>
+                                    <option value="gte"  <?= $ltOp==='gte'  ? 'selected':'' ?>>>= N days (booking to check-in)</option>
+                                    <option value="gt"   <?= $ltOp==='gt'   ? 'selected':'' ?>>More than N days (booking to check-in)</option>
                                 </select>
                                 <div class="cond-value-group" id="lt-val-<?= $index ?>" <?= $ltHidden ?>>
                                     <input type="number" name="sops[<?= $index ?>][lead_time_value]" value="<?= (int)$ltVal ?>" min="0" max="999">
@@ -984,13 +1799,13 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
 
                             <!-- Nights condition -->
                             <div class="condition-row">
-                                <span class="cond-label">🌙 Stay Length</span>
+                                <span class="cond-label">Stay length</span>
                                 <select name="sops[<?= $index ?>][nights_operator]" class="cond-operator" data-target="n-val-<?= $index ?>">
                                     <option value="any"  <?= $nOp==='any'  ? 'selected':'' ?>>Any number of nights</option>
                                     <option value="lt"   <?= $nOp==='lt'   ? 'selected':'' ?>>Less than N nights</option>
-                                    <option value="lte"  <?= $nOp==='lte'  ? 'selected':'' ?>>≤ N nights</option>
+                                    <option value="lte"  <?= $nOp==='lte'  ? 'selected':'' ?>><= N nights</option>
                                     <option value="eq"   <?= $nOp==='eq'   ? 'selected':'' ?>>Exactly N nights</option>
-                                    <option value="gte"  <?= $nOp==='gte'  ? 'selected':'' ?>>≥ N nights</option>
+                                    <option value="gte"  <?= $nOp==='gte'  ? 'selected':'' ?>>>= N nights</option>
                                     <option value="gt"   <?= $nOp==='gt'   ? 'selected':'' ?>>More than N nights</option>
                                 </select>
                                 <div class="cond-value-group" id="n-val-<?= $index ?>" <?= $nHidden ?>>
@@ -1001,13 +1816,13 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
 
                             <!-- Days until check-in condition -->
                             <div class="condition-row">
-                                <span class="cond-label">🚪 Days to Check-in</span>
+                                <span class="cond-label">Days to check-in</span>
                                 <select name="sops[<?= $index ?>][days_to_checkin_operator]" class="cond-operator" data-target="di-val-<?= $index ?>">
                                     <option value="any"  <?= $diOp==='any'  ? 'selected':'' ?>>Any time until check-in</option>
                                     <option value="lt"   <?= $diOp==='lt'   ? 'selected':'' ?>>Less than N days until check-in</option>
-                                    <option value="lte"  <?= $diOp==='lte'  ? 'selected':'' ?>>≤ N days until check-in</option>
+                                    <option value="lte"  <?= $diOp==='lte'  ? 'selected':'' ?>><= N days until check-in</option>
                                     <option value="eq"   <?= $diOp==='eq'   ? 'selected':'' ?>>Exactly N days until check-in</option>
-                                    <option value="gte"  <?= $diOp==='gte'  ? 'selected':'' ?>>≥ N days until check-in</option>
+                                    <option value="gte"  <?= $diOp==='gte'  ? 'selected':'' ?>>>= N days until check-in</option>
                                     <option value="gt"   <?= $diOp==='gt'   ? 'selected':'' ?>>More than N days until check-in</option>
                                 </select>
                                 <div class="cond-value-group" id="di-val-<?= $index ?>" <?= $diHidden ?>>
@@ -1018,13 +1833,13 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
 
                             <!-- Days until check-out condition -->
                             <div class="condition-row">
-                                <span class="cond-label">🏁 Days to Check-out</span>
+                                <span class="cond-label">Days to check-out</span>
                                 <select name="sops[<?= $index ?>][days_to_checkout_operator]" class="cond-operator" data-target="do-val-<?= $index ?>">
                                     <option value="any"  <?= $doOp==='any'  ? 'selected':'' ?>>Any time until check-out</option>
                                     <option value="lt"   <?= $doOp==='lt'   ? 'selected':'' ?>>Less than N days until check-out</option>
-                                    <option value="lte"  <?= $doOp==='lte'  ? 'selected':'' ?>>≤ N days until check-out</option>
+                                    <option value="lte"  <?= $doOp==='lte'  ? 'selected':'' ?>><= N days until check-out</option>
                                     <option value="eq"   <?= $doOp==='eq'   ? 'selected':'' ?>>Exactly N days until check-out</option>
-                                    <option value="gte"  <?= $doOp==='gte'  ? 'selected':'' ?>>≥ N days until check-out</option>
+                                    <option value="gte"  <?= $doOp==='gte'  ? 'selected':'' ?>>>= N days until check-out</option>
                                     <option value="gt"   <?= $doOp==='gt'   ? 'selected':'' ?>>More than N days until check-out</option>
                                 </select>
                                 <div class="cond-value-group" id="do-val-<?= $index ?>" <?= $doHidden ?>>
@@ -1041,11 +1856,17 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
         <div class="save-bar">
             <button type="submit" id="save-all-btn" class="btn btn-primary">💾 Save All SOPs</button>
         </div>
-    </form>
+                </form>
+            </section>
+
+            <section class="content-panel">
 
     <!-- ═══ Reminders Dashboard ═══ -->
-    <div class="section-header" style="margin-top:36px;">
-        <h2>Reminders <span class="count-badge"><?= count($reminders) ?></span></h2>
+    <div class="section-header">
+        <div>
+            <h2>Recent Reminders <span class="count-badge"><?= count($reminders) ?></span></h2>
+            <p class="section-intro">Latest scheduled and delivered reminders from the reminders table.</p>
+        </div>
     </div>
 
     <?php if (empty($reminders)): ?>
@@ -1080,13 +1901,18 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                                 <br><small style="color:var(--text-dim);"><?= htmlspecialchars($r['error_message']) ?></small>
                             <?php endif; ?>
                         </td>
-                        <td><?= $r['sent_at'] ? date('M j, g:i A', strtotime($r['sent_at'])) : '—' ?></td>
+                        <td><?= $r['sent_at'] ? date('M j, g:i A', strtotime($r['sent_at'])) : '-' ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
         </div>
     <?php endif; ?>
+
+            </section>
+        </main>
+    </div>
+    </div>
 
     <script>
         let sopCounter = <?= count($config['sops']) ?>;
@@ -1095,6 +1921,104 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
         const propertyList = <?= json_encode($config['properties']) ?>;
         const platformList = <?= json_encode($config['platforms']) ?>;
         const defaultHours = <?= $defaultReminderHours ?>;
+
+        function formatPropertyCount(count) {
+            return `${count} ${count === 1 ? 'property' : 'properties'} assigned`;
+        }
+
+        function updateSopCounts() {
+            const total = document.querySelectorAll('#sop-container .sop-card').length;
+            document.querySelectorAll('[data-sop-count]').forEach((el) => {
+                el.textContent = total;
+            });
+        }
+
+        function updateSopMeta(card) {
+            if (!card) return;
+            const count = card.querySelectorAll('input[name*="[properties][]"]:checked').length;
+            const meta = card.querySelector('.sop-meta');
+            if (meta) {
+                meta.textContent = formatPropertyCount(count);
+            }
+        }
+
+        function normalizeLegacyCopy(scope = document) {
+            const root = scope instanceof Element ? scope : document;
+
+            root.querySelectorAll('.toggle-label').forEach((el) => {
+                el.textContent = 'Send immediately on discovery';
+            });
+
+            root.querySelectorAll('.toggle-sub').forEach((el) => {
+                el.textContent = 'Send the reminder as soon as the cron discovers the booking.';
+            });
+
+            const selectMappings = [
+                {
+                    key: 'lead_time',
+                    label: 'Booking lead-time',
+                    options: {
+                        any: 'Any lead-time',
+                        lt: 'Less than N days (booking to check-in)',
+                        lte: '<= N days (booking to check-in)',
+                        eq: 'Exactly N days (booking to check-in)',
+                        gte: '>= N days (booking to check-in)',
+                        gt: 'More than N days (booking to check-in)'
+                    }
+                },
+                {
+                    key: 'nights',
+                    label: 'Stay length',
+                    options: {
+                        any: 'Any number of nights',
+                        lt: 'Less than N nights',
+                        lte: '<= N nights',
+                        eq: 'Exactly N nights',
+                        gte: '>= N nights',
+                        gt: 'More than N nights'
+                    }
+                },
+                {
+                    key: 'days_to_checkin',
+                    label: 'Days to check-in',
+                    options: {
+                        any: 'Any time until check-in',
+                        lt: 'Less than N days until check-in',
+                        lte: '<= N days until check-in',
+                        eq: 'Exactly N days until check-in',
+                        gte: '>= N days until check-in',
+                        gt: 'More than N days until check-in'
+                    }
+                },
+                {
+                    key: 'days_to_checkout',
+                    label: 'Days to check-out',
+                    options: {
+                        any: 'Any time until check-out',
+                        lt: 'Less than N days until check-out',
+                        lte: '<= N days until check-out',
+                        eq: 'Exactly N days until check-out',
+                        gte: '>= N days until check-out',
+                        gt: 'More than N days until check-out'
+                    }
+                }
+            ];
+
+            selectMappings.forEach(({ key, label, options }) => {
+                root.querySelectorAll(`select[name*="[${key}_operator]"]`).forEach((select) => {
+                    const rowLabel = select.closest('.condition-row')?.querySelector('.cond-label');
+                    if (rowLabel) {
+                        rowLabel.textContent = label;
+                    }
+
+                    Array.from(select.options).forEach((option) => {
+                        if (options[option.value]) {
+                            option.textContent = options[option.value];
+                        }
+                    });
+                });
+            });
+        }
 
         // ─── Toggle SOP card expand/collapse ──
         function toggleSopCard(header) {
@@ -1105,6 +2029,7 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
         function removeSop(btn) {
             if (confirm('Remove this SOP?')) {
                 btn.closest('.sop-card').remove();
+                updateSopCounts();
             }
         }
 
@@ -1121,13 +2046,21 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                     const title = card.querySelector('.sop-title');
                     const span = document.createElement('span');
                     span.className = 'badge-immediate';
-                    span.textContent = '⚡ Instant';
+                    span.textContent = 'Instant';
                     title.after(span);
                 }
             } else {
                 timingFields.classList.remove('disabled');
                 if (badge) badge.remove();
             }
+        }
+
+        function toggleScheduleOffset(select) {
+            const card = select.closest('.sop-card');
+            const isAt = select.value === 'at';
+            card.querySelectorAll('.schedule-offset-row, .schedule-random-row').forEach((row) => {
+                row.style.display = isAt ? 'none' : '';
+            });
         }
 
         function esc(str) {
@@ -1177,12 +2110,12 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                 <div class="sop-card expanded" id="sop-block-${idx}">
                     <div class="sop-card-header" onclick="toggleSopCard(this)">
                         <div class="left">
-                            <span class="chevron">▶</span>
+                            <span class="chevron">></span>
                             <span class="sop-title">New SOP</span>
-                            <span class="sop-meta">0 properties</span>
+                            <span class="sop-meta">0 properties assigned</span>
                         </div>
                         <div class="right">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="event.stopPropagation(); removeSop(this);">✕ Remove</button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="event.stopPropagation(); removeSop(this);">Remove</button>
                         </div>
                     </div>
 
@@ -1205,7 +2138,7 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                             <div class="field-group-title">Timing</div>
                             <div class="toggle-row">
                                 <div class="toggle-info">
-                                    <span class="toggle-label">⚡ Send Immediately on Discovery</span>
+                                    <span class="toggle-label">Send immediately on discovery</span>
                                     <span class="toggle-sub">Sends the reminder as soon as the cron discovers the booking (no waiting).</span>
                                 </div>
                                 <label class="switch">
@@ -1217,9 +2150,32 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                             <div class="timing-fields">
                                 <div class="inline-fields">
                                     <div class="field-row">
-                                        <label>Reminder Hours Before Check-in</label>
-                                        <input type="number" name="sops[${idx}][reminder_hours_before]" value="${defaultHours}" min="1" max="8760">
-                                        <div class="field-hint">How many hours before check-in to aim for. Max: 8760 (1 year).</div>
+                                        <label>Anchor</label>
+                                        <select name="sops[${idx}][schedule_anchor]">
+                                            <option value="check_in" selected>Check-in</option>
+                                            <option value="check_out">Check-out</option>
+                                        </select>
+                                    </div>
+                                    <div class="field-row">
+                                        <label>Timing</label>
+                                        <select name="sops[${idx}][schedule_relation]" class="schedule-relation" onchange="toggleScheduleOffset(this)">
+                                            <option value="before" selected>Before</option>
+                                            <option value="at">At exact time</option>
+                                            <option value="after">After</option>
+                                        </select>
+                                    </div>
+                                    <div class="field-row schedule-offset-row">
+                                        <label>Offset Hours</label>
+                                        <input type="number" name="sops[${idx}][schedule_offset_hours]" value="${defaultHours}" min="0" step="0.25">
+                                        <input type="hidden" name="sops[${idx}][reminder_hours_before]" value="${defaultHours}">
+                                        <div class="field-hint">Number of hours before or after the selected anchor.</div>
+                                    </div>
+                                    <div class="field-row schedule-random-row">
+                                        <label>Randomized Shift Timing</label>
+                                        <label class="checkbox-item">
+                                            <input type="checkbox" name="sops[${idx}][schedule_randomized]" value="1" checked>
+                                            Use the shift-window randomizer around the target time.
+                                        </label>
                                     </div>
                                     <div class="field-row">
                                         <label>Scan Days Ahead</label>
@@ -1266,14 +2222,14 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                             <div class="field-group-title">Conditions <span style="font-size:0.65rem;font-weight:400;color:var(--text-dim);margin-left:6px;">(SOP only fires when ALL conditions match)</span></div>
 
                             <div class="condition-row">
-                                <span class="cond-label">📅 Booking Lead-time</span>
+                                <span class="cond-label">Booking lead-time</span>
                                 <select name="sops[${idx}][lead_time_operator]" class="cond-operator" data-target="lt-val-${idx}">
                                     <option value="any">Any lead-time</option>
-                                    <option value="lt">Less than N days (booking→check-in)</option>
-                                    <option value="lte">≤ N days (booking→check-in)</option>
-                                    <option value="eq">Exactly N days (booking→check-in)</option>
-                                    <option value="gte">≥ N days (booking→check-in)</option>
-                                    <option value="gt">More than N days (booking→check-in)</option>
+                                    <option value="lt">Less than N days (booking to check-in)</option>
+                                    <option value="lte"><= N days (booking to check-in)</option>
+                                    <option value="eq">Exactly N days (booking to check-in)</option>
+                                    <option value="gte">>= N days (booking to check-in)</option>
+                                    <option value="gt">More than N days (booking to check-in)</option>
                                 </select>
                                 <div class="cond-value-group" id="lt-val-${idx}" style="display:none;">
                                     <input type="number" name="sops[${idx}][lead_time_value]" value="1" min="0" max="999">
@@ -1282,13 +2238,13 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                             </div>
 
                             <div class="condition-row">
-                                <span class="cond-label">🌙 Stay Length</span>
+                                <span class="cond-label">Stay length</span>
                                 <select name="sops[${idx}][nights_operator]" class="cond-operator" data-target="n-val-${idx}">
                                     <option value="any">Any number of nights</option>
                                     <option value="lt">Less than N nights</option>
-                                    <option value="lte">≤ N nights</option>
+                                    <option value="lte"><= N nights</option>
                                     <option value="eq">Exactly N nights</option>
-                                    <option value="gte">≥ N nights</option>
+                                    <option value="gte">>= N nights</option>
                                     <option value="gt">More than N nights</option>
                                 </select>
                                 <div class="cond-value-group" id="n-val-${idx}" style="display:none;">
@@ -1298,13 +2254,13 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                             </div>
 
                             <div class="condition-row">
-                                <span class="cond-label">🚪 Days to Check-in</span>
+                                <span class="cond-label">Days to check-in</span>
                                 <select name="sops[${idx}][days_to_checkin_operator]" class="cond-operator" data-target="di-val-${idx}">
                                     <option value="any">Any time until check-in</option>
                                     <option value="lt">Less than N days until check-in</option>
-                                    <option value="lte">≤ N days until check-in</option>
+                                    <option value="lte"><= N days until check-in</option>
                                     <option value="eq">Exactly N days until check-in</option>
-                                    <option value="gte">≥ N days until check-in</option>
+                                    <option value="gte">>= N days until check-in</option>
                                     <option value="gt">More than N days until check-in</option>
                                 </select>
                                 <div class="cond-value-group" id="di-val-${idx}" style="display:none;">
@@ -1314,13 +2270,13 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                             </div>
 
                             <div class="condition-row">
-                                <span class="cond-label">🏁 Days to Check-out</span>
+                                <span class="cond-label">Days to check-out</span>
                                 <select name="sops[${idx}][days_to_checkout_operator]" class="cond-operator" data-target="do-val-${idx}">
                                     <option value="any">Any time until check-out</option>
                                     <option value="lt">Less than N days until check-out</option>
-                                    <option value="lte">≤ N days until check-out</option>
+                                    <option value="lte"><= N days until check-out</option>
                                     <option value="eq">Exactly N days until check-out</option>
-                                    <option value="gte">≥ N days until check-out</option>
+                                    <option value="gte">>= N days until check-out</option>
                                     <option value="gt">More than N days until check-out</option>
                                 </select>
                                 <div class="cond-value-group" id="do-val-${idx}" style="display:none;">
@@ -1334,6 +2290,10 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
             `;
             
             container.insertAdjacentHTML('beforeend', html);
+            const card = document.getElementById(`sop-block-${idx}`);
+            normalizeLegacyCopy(card);
+            updateSopMeta(card);
+            updateSopCounts();
         }
 
         // ─── Show/hide condition value input when operator changes ──
@@ -1353,10 +2313,14 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
             const $this = $(this);
             const val = $this.val();
             const $container = $this.closest('.checkbox-list');
+            const card = $this.closest('.sop-card').get(0);
             
             // Only apply this logic to the platforms checkbox list (which has an 'all' option)
             const $allCheckbox = $container.find('input[value="all"]');
-            if ($allCheckbox.length === 0) return; // Must be the properties list, skip
+            if ($allCheckbox.length === 0) {
+                updateSopMeta(card);
+                return;
+            }
 
             if (val === 'all') {
                 if ($this.is(':checked')) {
@@ -1375,6 +2339,8 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                     }
                 }
             }
+
+            updateSopMeta(card);
         });
 
         // Update card header title on name input change
@@ -1423,6 +2389,9 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                             const newPropHtml = generateCheckboxHtml(idx, selectedProps);
                             $checkboxLists.eq(1).html(newPropHtml);
                         }
+
+                        normalizeLegacyCopy(block.get(0));
+                        updateSopMeta(block.get(0));
                     });
                 }
             }).always(function() {
@@ -1441,12 +2410,16 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
 
             // Select All Checkboxes
             $(document).on('click', '.select-all-btn', function() {
-                $(this).closest('.field-row').find('input[type="checkbox"]:visible').prop('checked', true);
+                const $field = $(this).closest('.field-row');
+                $field.find('input[type="checkbox"]:visible').prop('checked', true);
+                updateSopMeta($field.closest('.sop-card').get(0));
             });
 
             // Clear All Checkboxes
             $(document).on('click', '.clear-properties-btn', function() {
-                $(this).closest('.field-row').find('input[type="checkbox"]').prop('checked', false);
+                const $field = $(this).closest('.field-row');
+                $field.find('input[type="checkbox"]').prop('checked', false);
+                updateSopMeta($field.closest('.sop-card').get(0));
             });
 
             // "Saving..." Animation + comprehensive validation
@@ -1459,12 +2432,13 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
 
                     // When Send Immediately is ON → scan = 365, skip timing-based checks
                     if (!isImmediate) {
-                        const hours = parseInt(block.find('input[name*="[reminder_hours_before]"]').val()) || 0;
+                        const relation = block.find('select[name*="[schedule_relation]"]').val() || 'before';
+                        const hours = parseFloat(block.find('input[name*="[schedule_offset_hours]"]').val()) || 0;
                         const days  = parseInt(block.find('input[name*="[scan_days_ahead]"]').val()) || 0;
 
-                        // 1. Scan vs Reminder Hours
-                        if (days * 24 < hours) {
-                            alert(`⚠️ SOP "${name}":\nScan Days Ahead (${days}d = ${days*24}h) must be ≥ Reminder Hours Before (${hours}h).\n\nPlease increase Scan Days Ahead.`);
+                        // 1. Scan vs before-anchor offset.
+                        if (relation === 'before' && days * 24 < hours) {
+                            alert(`Warning for SOP "${name}":\nScan Days Ahead (${days}d = ${days*24}h) must be >= Offset Hours (${hours}h) when timing is Before.\n\nPlease increase Scan Days Ahead.`);
                             hasError = true;
                             return false;
                         }
@@ -1476,7 +2450,7 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                             // Condition requires check-in to be >= N days away, scan must cover N days
                             const minScan = diOp === 'gt' ? diVal + 1 : diVal;
                             if (days < minScan) {
-                                alert(`⚠️ SOP "${name}" — Days to Check-in condition issue:\nYou set "${diOp} ${diVal} days" but Scan Days Ahead is only ${days}.\n\nThe scan window won't reach that far — this condition will never fire.\nIncrease Scan Days Ahead to at least ${minScan}.`);
+                                alert(`Warning for SOP "${name}" - Days to check-in condition issue:\nYou set "${diOp} ${diVal} days" but Scan Days Ahead is only ${days}.\n\nThe scan window will not reach that far, so this condition will never fire.\nIncrease Scan Days Ahead to at least ${minScan}.`);
                                 hasError = true;
                                 return false;
                             }
@@ -1488,7 +2462,7 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                         if (doOp !== 'any' && (doOp === 'eq' || doOp === 'gte' || doOp === 'gt')) {
                             const minScan = doOp === 'gt' ? doVal + 1 : doVal;
                             if (days < minScan) {
-                                alert(`⚠️ SOP "${name}" — Days to Check-out condition issue:\nYou set "${doOp} ${doVal} days" but Scan Days Ahead is only ${days}.\n\nThe scan window won't reach that far — this condition will never fire.\nIncrease Scan Days Ahead to at least ${minScan}.`);
+                                alert(`Warning for SOP "${name}" - Days to check-out condition issue:\nYou set "${doOp} ${doVal} days" but Scan Days Ahead is only ${days}.\n\nThe scan window will not reach that far, so this condition will never fire.\nIncrease Scan Days Ahead to at least ${minScan}.`);
                                 hasError = true;
                                 return false;
                             }
@@ -1505,7 +2479,7 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
 
                 const btn = $(this).find('#save-all-btn');
                 if (btn.length) {
-                    btn.prop('disabled', true).text('⏳ Saving...');
+                    btn.prop('disabled', true).addClass('is-busy');
                 }
             });
 
@@ -1549,6 +2523,46 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
                 });
             }
 
+            function checkScanWindowHint(block) {
+                if (!block || !block.length) return;
+                const isImmediate = block.find('.immediate-toggle').is(':checked');
+                const days = parseInt(block.find('input[name*="[scan_days_ahead]"]').val()) || 0;
+
+                ['days_to_checkin', 'days_to_checkout'].forEach((key) => {
+                    const op = block.find(`select[name*="[${key}_operator]"]`).val();
+                    const val = parseInt(block.find(`input[name*="[${key}_value]"]`).val()) || 0;
+                    let hintEl = block.find(`.scan-hint-${key}`);
+
+                    if (!hintEl.length) {
+                        block.find(`select[name*="[${key}_operator]"]`).closest('.condition-row')
+                            .append(`<div class="scan-hint scan-hint-${key}"></div>`);
+                        hintEl = block.find(`.scan-hint-${key}`);
+                    }
+
+                    if (isImmediate) {
+                        hintEl.html('<span style="color:var(--success);font-size:0.7rem;">Immediate mode sets scan_days_ahead to 365, so this rule is covered.</span>').show();
+                        return;
+                    }
+
+                    if (op === 'any') {
+                        hintEl.hide();
+                        return;
+                    }
+
+                    const needsFarScan = (op === 'gte' || op === 'eq' || op === 'gt');
+                    if (needsFarScan) {
+                        const minScan = op === 'gt' ? val + 1 : val;
+                        if (days < minScan) {
+                            hintEl.html(`<span style="color:var(--warning);font-size:0.7rem;">Scan Days Ahead is ${days}d but this rule needs at least ${minScan}d. It will not fire.</span>`).show();
+                        } else {
+                            hintEl.html(`<span style="color:var(--success);font-size:0.7rem;">Scan Days Ahead (${days}d) covers this rule.</span>`).show();
+                        }
+                    } else {
+                        hintEl.html(`<span style="color:var(--muted);font-size:0.7rem;">This rule applies to stays inside the current scan window (${days}d).</span>`).show();
+                    }
+                });
+            }
+
             // Trigger hint check on relevant field changes
             $(document).on('change', 'select[name*="[days_to_checkin_operator]"], select[name*="[days_to_checkout_operator]"]', function() {
                 checkScanWindowHint($(this).closest('.sop-card'));
@@ -1559,8 +2573,24 @@ $defaultReminderHours = (int) env('REMINDER_HOURS_BEFORE', 12);
             $(document).on('change', '.immediate-toggle', function() {
                 checkScanWindowHint($(this).closest('.sop-card'));
             });
+            $(document).on('change', '.schedule-relation', function() {
+                toggleScheduleOffset(this);
+                checkScanWindowHint($(this).closest('.sop-card'));
+            });
+            $(document).on('input change', 'input[name*="[schedule_offset_hours]"]', function() {
+                const hiddenLegacy = $(this).closest('.field-row').find('input[name*="[reminder_hours_before]"]');
+                hiddenLegacy.val($(this).val());
+                checkScanWindowHint($(this).closest('.sop-card'));
+            });
             // Run on page load for all existing cards
-            $('.sop-card').each(function() { checkScanWindowHint($(this)); });
+            $('.sop-card').each(function() {
+                normalizeLegacyCopy(this);
+                updateSopMeta(this);
+                const relation = this.querySelector('.schedule-relation');
+                if (relation) toggleScheduleOffset(relation);
+                checkScanWindowHint($(this));
+            });
+            updateSopCounts();
         });
     </script>
 </body>

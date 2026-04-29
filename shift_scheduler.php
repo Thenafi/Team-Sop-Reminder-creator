@@ -17,6 +17,92 @@ require_once __DIR__ . '/config.php';
 // BDT timezone
 define('TEAM_TIMEZONE', 'Asia/Dhaka');
 
+function hasExplicitTimezone($datetime) {
+    return is_string($datetime) && preg_match('/(?:Z|[+-]\d{2}:?\d{2})$/', trim($datetime));
+}
+
+function safeDateTimeZone($timezone = null) {
+    if (!empty($timezone)) {
+        try {
+            return new DateTimeZone($timezone);
+        } catch (Exception $e) {
+            // Fall through to app default.
+        }
+    }
+
+    return new DateTimeZone(TEAM_TIMEZONE);
+}
+
+function parseReservationDateTime($datetime, $propertyTimezone = null) {
+    if (empty($datetime)) {
+        return null;
+    }
+
+    if (hasExplicitTimezone($datetime)) {
+        return new DateTime($datetime);
+    }
+
+    return new DateTime($datetime, safeDateTimeZone($propertyTimezone));
+}
+
+function formatReservationDateTimeForStorage($datetime, $propertyTimezone = null) {
+    $dt = parseReservationDateTime($datetime, $propertyTimezone);
+    return $dt ? $dt->format('Y-m-d H:i:s') : null;
+}
+
+function normalizeScheduleAnchor($anchor) {
+    return $anchor === 'check_out' ? 'check_out' : 'check_in';
+}
+
+function normalizeScheduleRelation($relation) {
+    return in_array($relation, ['before', 'at', 'after'], true) ? $relation : 'before';
+}
+
+function normalizeScheduleOffsetHours($offset) {
+    if (!is_numeric($offset)) {
+        return 0.0;
+    }
+
+    return max(0.0, (float) $offset);
+}
+
+function isScheduleRandomized($sop) {
+    if (array_key_exists('schedule_randomized', $sop)) {
+        return !empty($sop['schedule_randomized']);
+    }
+
+    return true;
+}
+
+function getSopScheduleTiming($sop) {
+    $legacyHours = (float) ($sop['reminder_hours_before'] ?? env('REMINDER_HOURS_BEFORE', 12));
+    $relation = normalizeScheduleRelation($sop['schedule_relation'] ?? 'before');
+    $offset = array_key_exists('schedule_offset_hours', $sop)
+        ? normalizeScheduleOffsetHours($sop['schedule_offset_hours'])
+        : max(0.0, $legacyHours);
+
+    return [
+        'anchor' => normalizeScheduleAnchor($sop['schedule_anchor'] ?? 'check_in'),
+        'relation' => $relation,
+        'offset_hours' => $relation === 'at' ? 0.0 : $offset,
+        'randomized' => $relation === 'at' ? false : isScheduleRandomized($sop),
+    ];
+}
+
+function calculateTargetTimestamp($anchorTimestamp, $relation, $offsetHours) {
+    $offsetSeconds = (int) round($offsetHours * 3600);
+
+    if ($relation === 'after') {
+        return $anchorTimestamp + $offsetSeconds;
+    }
+
+    if ($relation === 'at') {
+        return $anchorTimestamp;
+    }
+
+    return $anchorTimestamp - $offsetSeconds;
+}
+
 /**
  * Get all shift boundaries for a given day, in Unix timestamps.
  * Shifts are 4-hour blocks starting at SHIFT_START_HOUR.
@@ -203,6 +289,105 @@ function calculateRandomSendTime($checkInDatetime, $reminderHoursBefore = null) 
         'debug' => sprintf(
             "CheckIn: %s | Target: %s | TargetShift: %s | ChosenShift: %s | Scheduled: %s",
             $checkIn->format('Y-m-d H:i'),
+            date('Y-m-d H:i', $targetTimestamp),
+            $targetShift['label'],
+            $chosenShift['label'],
+            $scheduledDt->format('Y-m-d H:i')
+        ),
+    ];
+}
+
+function calculateReminderSendTime($anchorDatetime, $timing, $propertyTimezone = null) {
+    $relation = normalizeScheduleRelation($timing['relation'] ?? 'before');
+    $offsetHours = normalizeScheduleOffsetHours($timing['offset_hours'] ?? 0);
+    $randomized = $relation !== 'at' && !empty($timing['randomized']);
+
+    $anchor = parseReservationDateTime($anchorDatetime, $propertyTimezone);
+    if (!$anchor) {
+        return [
+            'timestamp' => time(),
+            'immediate' => true,
+            'debug' => 'Anchor datetime missing. Scheduling for now.',
+        ];
+    }
+
+    $teamTz = new DateTimeZone(TEAM_TIMEZONE);
+    $anchorForDebug = clone $anchor;
+    $anchorForDebug->setTimezone($teamTz);
+
+    $anchorTimestamp = $anchor->getTimestamp();
+    $targetTimestamp = calculateTargetTimestamp($anchorTimestamp, $relation, $offsetHours);
+    $now = time();
+
+    if ($targetTimestamp <= $now) {
+        return [
+            'timestamp' => $now,
+            'immediate' => true,
+            'debug' => sprintf(
+                'Target time is in the past. Anchor: %s | Relation: %s | Offset: %sh. Sending immediately.',
+                $anchorForDebug->format('Y-m-d H:i'),
+                $relation,
+                rtrim(rtrim(number_format($offsetHours, 2, '.', ''), '0'), '.')
+            ),
+        ];
+    }
+
+    if (!$randomized) {
+        $targetDt = new DateTime('@' . $targetTimestamp);
+        $targetDt->setTimezone($teamTz);
+
+        return [
+            'timestamp' => $targetTimestamp,
+            'immediate' => false,
+            'debug' => sprintf(
+                'Fixed schedule. Anchor: %s | Relation: %s | Offset: %sh | Scheduled: %s',
+                $anchorForDebug->format('Y-m-d H:i'),
+                $relation,
+                rtrim(rtrim(number_format($offsetHours, 2, '.', ''), '0'), '.'),
+                $targetDt->format('Y-m-d H:i')
+            ),
+        ];
+    }
+
+    $targetShift = findShiftForTimestamp($targetTimestamp);
+    if (!$targetShift) {
+        return [
+            'timestamp' => $targetTimestamp,
+            'immediate' => false,
+            'debug' => 'Could not determine shift. Using exact target time.',
+        ];
+    }
+
+    $adjacent = getAdjacentShifts($targetShift);
+    $adjacentShift = (mt_rand(0, 1) === 0) ? $adjacent['before'] : $adjacent['after'];
+    $candidateShifts = [$targetShift, $adjacentShift];
+    $chosenShift = $candidateShifts[mt_rand(0, 1)];
+    $randomTimestamp = mt_rand($chosenShift['start'], $chosenShift['end'] - 1);
+
+    if ($randomTimestamp <= $now) {
+        $randomTimestamp = $now + 60;
+    }
+
+    if ($relation === 'before') {
+        $thirtyMinBeforeAnchor = $anchorTimestamp - (30 * 60);
+        if ($randomTimestamp >= $thirtyMinBeforeAnchor) {
+            return [
+                'timestamp' => $now,
+                'immediate' => true,
+                'debug' => 'Scheduled time is within 30 min of anchor. Sending immediately.',
+            ];
+        }
+    }
+
+    $scheduledDt = new DateTime('@' . $randomTimestamp);
+    $scheduledDt->setTimezone($teamTz);
+
+    return [
+        'timestamp' => $randomTimestamp,
+        'immediate' => false,
+        'debug' => sprintf(
+            'Randomized schedule. Anchor: %s | Target: %s | TargetShift: %s | ChosenShift: %s | Scheduled: %s',
+            $anchorForDebug->format('Y-m-d H:i'),
             date('Y-m-d H:i', $targetTimestamp),
             $targetShift['label'],
             $chosenShift['label'],

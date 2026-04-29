@@ -129,7 +129,7 @@ function fetchProperties() {
  * @param string $endDate YYYY-MM-DD
  * @return array Array of reservation objects
  */
-function fetchReservations($propertyUuid, $startDate, $endDate) {
+function fetchReservations($propertyUuid, $startDate, $endDate, $dateQuery = 'checkin') {
     if (empty($propertyUuid)) {
         logMessage("No property UUID provided for fetchReservations");
         return [];
@@ -146,6 +146,7 @@ function fetchReservations($propertyUuid, $startDate, $endDate) {
         $queryParts[] = 'include=guest,properties';
         $queryParts[] = 'start_date=' . urlencode($startDate);
         $queryParts[] = 'end_date=' . urlencode($endDate);
+        $queryParts[] = 'date_query=' . urlencode($dateQuery === 'checkout' ? 'checkout' : 'checkin');
         $queryParts[] = 'per_page=100';
         $queryParts[] = 'page=' . $page;
 

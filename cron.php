@@ -37,6 +37,24 @@ function evaluateCondition(string $operator, int $actual, int $threshold): bool
     }
 }
 
+function getReservationAnchorRaw(array $reservation, string $anchor): ?string
+{
+    if ($anchor === 'check_out') {
+        return $reservation['check_out'] ?? $reservation['departure_date'] ?? null;
+    }
+
+    return $reservation['check_in'] ?? $reservation['arrival_date'] ?? null;
+}
+
+function getReservationPropertyId(array $reservation): string
+{
+    if (!empty($reservation['properties'])) {
+        return $reservation['properties'][0]['id'] ?? '';
+    }
+
+    return '';
+}
+
 if (php_sapi_name() !== 'cli') {
     // If running via a browser, ensure it doesn't time out or stop if the tab is closed
     set_time_limit(0);
@@ -59,22 +77,24 @@ logMessage("Phase 1: Discovering new reservations...");
 $enabledProperties = [];
 $sops = $config['sops'] ?? [];
 
-// Build a unique master list of ALL properties referenced in ANY SOP, tracking the MAX scan days needed for each
+// Build a unique master list of ALL properties referenced in ANY SOP, tracking the MAX scan days needed per anchor.
 $propertyScanDays = [];
 foreach ($sops as $sop) {
     // Immediate-mode SOPs need to scan far ahead to catch all new bookings
+    $timing = getSopScheduleTiming($sop);
+    $anchor = $timing['anchor'];
     $sopScanDays = !empty($sop['send_immediately']) ? 365 : (int) ($sop['scan_days_ahead'] ?? 2);
     if (!empty($sop['properties']) && is_array($sop['properties'])) {
         foreach ($sop['properties'] as $pid) {
             if (!isset($propertyScanDays[$pid])) {
-                $propertyScanDays[$pid] = $sopScanDays;
-            } else {
-                $propertyScanDays[$pid] = max($propertyScanDays[$pid], $sopScanDays);
+                $propertyScanDays[$pid] = ['check_in' => 0, 'check_out' => 0];
             }
+            $propertyScanDays[$pid][$anchor] = max($propertyScanDays[$pid][$anchor], $sopScanDays);
         }
     }
 }
 $activePropertyUuids = array_keys($propertyScanDays);
+$allReservations = [];
 
 if (empty($sops) || empty($activePropertyUuids)) {
     logMessage("No active SOPs or assigned properties found in config. Skipping Phase 1.");
@@ -83,10 +103,9 @@ if (empty($sops) || empty($activePropertyUuids)) {
 
     $allReservations = [];
 
-    // Fetch accepted reservations for each unique active property
+    // Fetch accepted reservations for each unique active property and required anchor.
     foreach ($activePropertyUuids as $uuid) {
         $prop = $config['properties'][$uuid] ?? [];
-        $scanDaysAhead = $propertyScanDays[$uuid];
         
         // Build timezone-aware start and end dates
         $tz = $prop['timezone'] ?? '-0500';
@@ -96,28 +115,39 @@ if (empty($sops) || empty($activePropertyUuids)) {
             $dtz = new DateTimeZone('UTC');
         }
 
-        $startDt = new DateTime('yesterday', $dtz);
-        $endDt = new DateTime("today + $scanDaysAhead days", $dtz);
-
-        $startDate = $startDt->format('Y-m-d');
-        $endDate = $endDt->format('Y-m-d');
-
-        logMessage("Fetching reservations for property $uuid from $startDate to $endDate (TZ: $tz)");
-        $propReservations = fetchReservations($uuid, $startDate, $endDate);
-        
-        // Tag with property info in case API omits it
-        foreach ($propReservations as &$res) {
-            // Assign property id manually so we know where it came from
-            if (empty($res['properties'])) {
-                $res['properties'] = [
-                    ['id' => $uuid, 'name' => $prop['name'] ?? '']
-                ];
+        foreach (['check_in' => 'checkin', 'check_out' => 'checkout'] as $anchor => $dateQuery) {
+            $scanDaysAhead = (int) ($propertyScanDays[$uuid][$anchor] ?? 0);
+            if ($scanDaysAhead <= 0) {
+                continue;
             }
-        }
-        unset($res);
 
-        $allReservations = array_merge($allReservations, $propReservations);
+            $startDt = new DateTime('yesterday', $dtz);
+            $endDt = new DateTime("today + $scanDaysAhead days", $dtz);
+
+            $startDate = $startDt->format('Y-m-d');
+            $endDate = $endDt->format('Y-m-d');
+
+            logMessage("Fetching reservations for property $uuid from $startDate to $endDate (TZ: $tz, date_query=$dateQuery)");
+            $propReservations = fetchReservations($uuid, $startDate, $endDate, $dateQuery);
+            
+            // Tag with property info in case API omits it
+            foreach ($propReservations as &$res) {
+                if (empty($res['properties'])) {
+                    $res['properties'] = [
+                        ['id' => $uuid, 'name' => $prop['name'] ?? '']
+                    ];
+                }
+                $dedupeKey = $res['id'] ?? null;
+                if ($dedupeKey) {
+                    $allReservations[$dedupeKey] = $res;
+                } else {
+                    $allReservations[] = $res;
+                }
+            }
+            unset($res);
+        }
     }
+    $allReservations = array_values($allReservations);
 
     $newCount = 0;
     $reservationSyncLog = [];
@@ -311,7 +341,12 @@ if (empty($sops) || empty($activePropertyUuids)) {
             // ── End Conditional Filters ───────────────────────────
 
             $sendImmediately = !empty($sop['send_immediately']);
-            $reminderHours = (int) ($sop['reminder_hours_before'] ?? env('REMINDER_HOURS_BEFORE', 12));
+            $timing = getSopScheduleTiming($sop);
+            $anchorRaw = getReservationAnchorRaw($res, $timing['anchor']);
+            if (!$anchorRaw) {
+                $reservationSyncLog[$reservationId]['sops'][$sop['name'] ?? $sopId] = "Skipped (Missing {$timing['anchor']} datetime)";
+                continue;
+            }
             $sopMessage = $sop['sop_message'] ?? 'No SOP message defined.';
 
             // Calculate send time — immediate mode bypasses the shift scheduler entirely
@@ -322,8 +357,8 @@ if (empty($sops) || empty($activePropertyUuids)) {
                     'debug' => 'Send Immediately mode enabled. Scheduling for now.',
                 ];
             } else {
-                // Pass the RAW check-in string so the scheduler knows the exact time and timezone!
-                $schedule = calculateRandomSendTime($checkInRaw, $reminderHours);
+                $propertyTimezone = $config['properties'][$propertyId]['timezone'] ?? null;
+                $schedule = calculateReminderSendTime($anchorRaw, $timing, $propertyTimezone);
             }
             logMessage("Reservation $reservationId ($sopId): " . $schedule['debug']);
 
@@ -331,8 +366,9 @@ if (empty($sops) || empty($activePropertyUuids)) {
             $scheduledAt = date('Y-m-d H:i:s', $schedule['timestamp']);
             // $checkIn/$checkOut are already plain YYYY-MM-DD strings (sliced above).
             // Store them directly — no strtotime needed, no timezone shift risk.
-            $checkInFormatted  = $checkIn;
-            $checkOutFormatted = $checkOut;
+            $propertyTimezone = $config['properties'][$propertyId]['timezone'] ?? null;
+            $checkInFormatted  = formatReservationDateTimeForStorage($checkInRaw, $propertyTimezone) ?? $checkIn;
+            $checkOutFormatted = formatReservationDateTimeForStorage($checkOutRaw, $propertyTimezone) ?? $checkOut;
 
             // Insert into DB
             try {
@@ -408,10 +444,10 @@ if (empty($sops) || empty($activePropertyUuids)) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PHASE 2: Check for modified check-in times (edge case)
+// PHASE 2: Check for modified anchor times (edge case)
 // ═══════════════════════════════════════════════════════════════
 if (env('API_MODE', 'live') === 'live') {
-    logMessage("Phase 2: Checking for modified check-in times...");
+    logMessage("Phase 2: Checking for modified anchor times...");
 
     // Get all scheduled (not yet sent) reminders
     $stmt = $db->prepare("SELECT * FROM reminders WHERE status = 'scheduled'");
@@ -433,12 +469,9 @@ if (env('API_MODE', 'live') === 'live') {
             if (isset($resMap[$resId])) {
                 $apiRes = $resMap[$resId];
             } else {
-                // 2. If it's due soon (or past due), but wasn't in Phase 1 (out of window), fetch it specifically
-                $isDueSoon = strtotime($reminder['scheduled_at']) <= (time() + 600); // due now or in next 10 mins
-                if ($isDueSoon) {
-                    logMessage("Reservation $resId was NOT in scan window but is due. Fetching specifically...");
-                    $apiRes = fetchReservation($resId);
-                }
+                // Fetch scheduled reservations that were outside the current discovery window so unsent reminders can be rescheduled.
+                logMessage("Reservation $resId was NOT in scan window. Fetching specifically for schedule verification...");
+                $apiRes = fetchReservation($resId);
             }
 
             if ($apiRes) {
@@ -452,35 +485,52 @@ if (env('API_MODE', 'live') === 'live') {
                 }
 
                 // Slice to YYYY-MM-DD — same reason as Phase 1; avoid UTC midnight shift.
-                $apiCheckInRaw = $apiRes['check_in'] ?? $apiRes['arrival_date'] ?? '';
-                $apiCheckIn    = substr($apiCheckInRaw, 0, 10);
-                $dbCheckIn     = substr($reminder['check_in'], 0, 10);
-
-                if ($apiCheckIn !== $dbCheckIn) {
-                    logMessage("Check-in changed for reservation $resId: DB=$dbCheckIn → API=$apiCheckIn. Recalculating...");
-
-                    $sopId = $reminder['sop_id'];
-                    $reminderHours = env('REMINDER_HOURS_BEFORE', 12);
-                    foreach ($sops as $sop) {
-                        if ($sop['id'] === $sopId) {
-                            $reminderHours = (int) ($sop['reminder_hours_before'] ?? env('REMINDER_HOURS_BEFORE', 12));
-                            break;
-                        }
+                $sopId = $reminder['sop_id'];
+                $matchedSop = null;
+                foreach ($sops as $sop) {
+                    if (($sop['id'] ?? '') === $sopId) {
+                        $matchedSop = $sop;
+                        break;
                     }
+                }
 
-                    // Pass the RAW API check-in to the scheduler for exact calculation
-                    $schedule = calculateRandomSendTime($apiCheckInRaw, $reminderHours);
+                if (!$matchedSop) {
+                    continue;
+                }
+
+                $propertyId = $reminder['property_id'] ?? getReservationPropertyId($apiRes);
+                $propertyTimezone = $config['properties'][$propertyId]['timezone'] ?? null;
+                $timing = getSopScheduleTiming($matchedSop);
+
+                $apiCheckInRaw = $apiRes['check_in'] ?? $apiRes['arrival_date'] ?? '';
+                $apiCheckOutRaw = $apiRes['check_out'] ?? $apiRes['departure_date'] ?? '';
+                $apiCheckIn = formatReservationDateTimeForStorage($apiCheckInRaw, $propertyTimezone) ?? substr($apiCheckInRaw, 0, 10);
+                $apiCheckOut = formatReservationDateTimeForStorage($apiCheckOutRaw, $propertyTimezone) ?? substr($apiCheckOutRaw, 0, 10);
+                $dbCheckIn = $reminder['check_in'];
+                $dbCheckOut = $reminder['check_out'];
+
+                $anchorChanged = $timing['anchor'] === 'check_out'
+                    ? $apiCheckOut !== $dbCheckOut
+                    : $apiCheckIn !== $dbCheckIn;
+
+                if ($anchorChanged) {
+                    $oldAnchor = $timing['anchor'] === 'check_out' ? $dbCheckOut : $dbCheckIn;
+                    $newAnchor = $timing['anchor'] === 'check_out' ? $apiCheckOut : $apiCheckIn;
+                    logMessage("{$timing['anchor']} changed for reservation $resId: DB=$oldAnchor API=$newAnchor. Recalculating...");
+
+                    $anchorRaw = getReservationAnchorRaw($apiRes, $timing['anchor']);
+
+                    $schedule = calculateReminderSendTime($anchorRaw, $timing, $propertyTimezone);
                     $newScheduledAt = date('Y-m-d H:i:s', $schedule['timestamp']);
 
-                    $stmt = $db->prepare("UPDATE reminders SET check_in = ?, scheduled_at = ? WHERE id = ?");
-                    // $apiCheckIn is already a plain YYYY-MM-DD string — store directly.
-                    $stmt->execute([$apiCheckIn, $newScheduledAt, $reminder['id']]);
-                    logMessage("→ Rescheduled to $newScheduledAt");
+                    $stmt = $db->prepare("UPDATE reminders SET check_in = ?, check_out = ?, scheduled_at = ? WHERE id = ?");
+                    $stmt->execute([$apiCheckIn, $apiCheckOut, $newScheduledAt, $reminder['id']]);
+                    logMessage("Rescheduled to $newScheduledAt");
                 }
             }
         }
     } else {
-        logMessage("Skipping check-in time verification: No scheduled reminders.");
+        logMessage("Skipping anchor time verification: No scheduled reminders.");
     }
 }
 
